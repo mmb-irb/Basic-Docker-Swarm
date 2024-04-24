@@ -89,7 +89,7 @@ docker-compose run loader list
 
 **Load** documents to database:
 
-As the database comes empty, it's necessary to laod some data for running the website properly.
+As the database comes empty, it's necessary to load some data for running the website properly.
 
 ```
 docker-compose run loader load /data/upload.json

@@ -22,7 +22,7 @@ COPY .env /app/loader-base
 # Change working directory to /app/loader-base
 WORKDIR /app/loader-base
 
-# Install loader
+# Install packages
 RUN npm install
 
 # Update mongodb version to the version of the mongo docker image

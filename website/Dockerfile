@@ -13,16 +13,16 @@ WORKDIR /app
 # Define a directory for the volume
 VOLUME /data
 
-# Clone loader repo
+# Clone nuxt-skeleton repo
 RUN git clone https://mmb.irbbarcelona.org/gitlab/gbayarri/nuxt-skeleton.git
 
 # Copy the .env file into the Docker image
 COPY .env /app/nuxt-skeleton
 
-# Change working directory to /app/loader-base
+# Change working directory to /app/nuxt-skeleton
 WORKDIR /app/nuxt-skeleton
 
-# Install loader
+# Install packages
 RUN npm install
 
 # Build website in production
