@@ -77,14 +77,6 @@ docker-compose up -d
 
 This instruction will run docker-compose in background and it will create the three services described in the first section.
 
-### Check website
-
-Open a browser and type:
-
-```
-http://localhost:8080
-```
-
 ### Use loader
 
 While the mongodb and website containers will remain up, the loader must be called every time is needed.
@@ -96,6 +88,8 @@ docker-compose run loader list
 ```
 
 **Load** documents to database:
+
+As the database comes empty, it's necessary to laod some data for running the website properly.
 
 ```
 docker-compose run loader load /data/upload.json
@@ -127,6 +121,14 @@ For this proof of concept, the upload.json must have the following format:
 
 ```
 docker-compose run loader remove -d <ID>
+```
+
+### Check website
+
+Open a browser and type:
+
+```
+http://localhost:8080
 ```
 
 ### Stop / start services
