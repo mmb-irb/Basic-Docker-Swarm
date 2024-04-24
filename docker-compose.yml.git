@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  loader:
+    image: loader_image
+    container_name: my_loader
+    build:
+      context: ./loader
+    depends_on:
+      - mongodb
+    working_dir: /data
+    volumes:
+      - /path/to/loader:/data   # path where the loader will look for files
+    networks:
+      - my_network
+
+  website:
+    image: website_image
+    container_name: my_website
+    build:
+      context: ./website
+    depends_on:
+      - mongodb
+    ports:
+      - "8080:3001"   # port mapping
+    networks:
+      - my_network
+
+  mongodb:
+    container_name: my_mongo_container
+    image: mongo:6
+    volumes:
+      - /path/to/db:/data/db  # path where the database will be stored (outside the container, in the host machine)
+    networks:
+      - my_network
+
+networks:
+  my_network: 
+    name: my_network
