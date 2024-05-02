@@ -1,9 +1,8 @@
-
 # Docker web services
 
 In this **proof of concept** there are all the files needed for executing the different services needed for executing a website: **front-end**, **back-end**, **database** and **data loader**. All these services have been integrated into docker containers and connected between them via docker network.
 
-This help contains the instructions for **launching the services** via **docker-compose**. If you want to launch them via **Dockerfiles**, please [**click here**](via_docker.md).
+This help contains the instructions for **launching the services** via **Dockerfiles**. If you want to launch them via **docker-compose**, please [**click here**](README.md).
 
 ## Services description
 
@@ -31,15 +30,11 @@ https://github.com/docker-library/mongo
 
 For this proof of concept, the choosen version of mongo is 6.
 
-## Prepare configuration files
+## Use docker
 
-### docker-compose.yml
+For building the services **manually via docker** instructions, please execute the following steps: 
 
-Copy docker-compose.yml.git into **docker-compose.yml** and modify the volumes' routes. 
-
-Take a look as well at the website ports. It may change depending on the host configuration. Changing the port implies to change it as well in the website/Dockerfile.
-
-### .env file
+### Prepare .env file
 
 ⚠️ No sensible default value is provided for any of these fields, they **need to be defined** ⚠️
 
@@ -65,37 +60,45 @@ DB_DATABASE=<DB NAME>
 DB_AUTHSOURCE=<DB NAME>
 ```
 
-The **DB_HOST** must be the same name as the **mongodb container_name** in the **docker-compose.yml**.
+The **DB_HOST** must be the same name used in the [Pull / run mongo docker section](#pull-run-mongo-docker).
 
-## Build services
-
-For building the services via **docker compose**, please execute the following instruction from the root of this project:
+### Build loader image
 
 ```
-docker-compose up -d
+cd loader
+docker build -t loader_image .
 ```
 
-This instruction will run docker-compose in background and it will create the three services described in the first section.
-
-## Execute services
-
-### Use loader
-
-While the mongodb and website containers will remain up, the loader must be called every time is needed.
-
-**List** database documents:
+### Create network
 
 ```
-docker-compose run loader list
+docker network create my_network
 ```
 
-**Load** documents to database:
-
-As the database comes empty, it's necessary to load some data for running the website properly. The route for the upload.json must be the same defined as **working_dir** in the **docker-compose.yml** file (ie /data). And the upload.json file must be in the **volumes** path defined in the **docker-compose.yml** file.
+### Pull / run mongo docker
 
 ```
-docker-compose run loader load /data/upload.json
+docker run --name my_mongo_container -v /path/to/db:/data/db --network my_network -d mongo:6
 ```
+
+As it is highly recommended to have the database **outside of the container**, an absolut path to the host (/path/to/db) must be provided. The **database will be stored** in this folder.
+
+### Check that everything is properly working:
+
+Test the loader:
+
+```
+docker run --network my_network loader_image list
+```
+
+### Load some data to database
+
+```
+cd loader
+docker run -w /data -v /path/to/data:/data --network my_network loader_image load /data/upload.json
+```
+
+Where /path/to/db is the **absolut path** were to save the upload.json file is in the computer. This folder will be **mapped into the docker**.
 
 For this proof of concept, the upload.json must have the following format:
 
@@ -129,12 +132,19 @@ For this proof of concept, the upload.json must have the following format:
 ]
 ```
 
-Note that, in this proof of concept, the front-end shows the files in a 3D structure visualizer, so the files should be in **PDB** format. The route for these files must be the same defined as **working_dir** in the **docker-compose.yml** file (ie /data). And the files must be in the **volumes** path defined in the **docker-compose.yml** file.
-
-**Remove** database document:
+### Build website image
 
 ```
-docker-compose run loader remove -d <ID>
+cd website
+docker build -t web_image .
+```
+
+### Run web_image
+
+Be aware that the port is the **same exposed in the Dockerfile**.
+
+```
+docker run --name my_web_container --network my_network -d -p 8080:3001 web_image
 ```
 
 ### Check website
@@ -145,50 +155,23 @@ Open a browser and type:
 http://localhost:8080
 ```
 
-Or modify the port by the one defined as **ports** in the **docker-compose.yml** file.
-
-## Stop / start services
-
-For **stopping** all the services (website and mongodb):
-
-```
-docker-compose stop
-```
-
-For **stopping** all the services (website and mongodb) and **remove** all up images:
-
-```
-docker-compose down
-```
-
-For **starting** all the services (website and mongodb):
-
-```
-docker-compose start
-```
-
 ## Tips
 
-### Avoid cache for docker-compose
+### Avoid cache for Dockerfile
 
 Ie when developing and doing changes in git repo.
 
-1. Stop all containers and remove all images: 
+```
+docker build --no-cache -t loader_image .
+```
 
-    ```
-    docker-compose down --rmi all
-    ```
+### Remove documents via loader
 
-2. Rebuild images avoiding cache:
+As the remove command of the loader is interactive, this can give problems when executing through docker, so please use the -y flag when removing documents in order to avoid hanging the docker execution:
 
-    ```
-    docker-compose build --no-cache
-    ```
-
-3. Up services:
-    ```
-    docker-compose up -d
-    ```
+```
+docker run --network my_network loader_image remove -d <ID> -y
+```
 
 ### Execute mongo docker in terminal mode
 
@@ -278,15 +261,3 @@ Show logs for a container:
 ```
 docker logs my_web_container
 ```
-
-## Credits
-
-Genís Bayarri, Adam Hospital.
-
-## Copyright & licensing
-
-This website has been developed by the [MMB group](https://mmb.irbbarcelona.org) at the [IRB Barcelona](https://irbbarcelona.org).
-
-© 2024 **Institute for Research in Biomedicine**
-
-Licensed under the **Apache License 2.0**.
