@@ -64,20 +64,20 @@ The **DB_HOST** must be the same name used in the [Pull / run mongo docker secti
 
 ### Build loader image
 
-```
+```sh
 cd loader
 docker build -t loader_image .
 ```
 
 ### Create network
 
-```
+```sh
 docker network create my_network
 ```
 
 ### Pull / run mongo docker
 
-```
+```sh
 docker run --name my_mongo_container -v /path/to/db:/data/db --network my_network -d mongo:6
 ```
 
@@ -87,13 +87,13 @@ As it is highly recommended to have the database **outside of the container**, a
 
 Test the loader:
 
-```
+```sh
 docker run --network my_network loader_image list
 ```
 
 ### Load some data to database
 
-```
+```sh
 cd loader
 docker run -w /data -v /path/to/data:/data --network my_network loader_image load /data/upload.json
 ```
@@ -134,7 +134,7 @@ For this proof of concept, the upload.json must have the following format:
 
 ### Build website image
 
-```
+```sh
 cd website
 docker build -t web_image .
 ```
@@ -143,7 +143,7 @@ docker build -t web_image .
 
 Be aware that the port is the **same exposed in the Dockerfile**.
 
-```
+```sh
 docker run --name my_web_container --network my_network -d -p 8080:3001 web_image
 ```
 
@@ -161,7 +161,7 @@ http://localhost:8080
 
 Ie when developing and doing changes in git repo.
 
-```
+```sh
 docker build --no-cache -t loader_image .
 ```
 
@@ -169,19 +169,19 @@ docker build --no-cache -t loader_image .
 
 As the remove command of the loader is interactive, this can give problems when executing through docker, so please use the -y flag when removing documents in order to avoid hanging the docker execution:
 
-```
+```sh
 docker run --network my_network loader_image remove -d <ID> -y
 ```
 
 ### Execute mongo docker in terminal mode
 
-```
+```sh
 docker exec -it my_mongo_container bash
 ```
 
 And then: 
 
-```
+```sh
 mongosh 
 ```
 
@@ -191,7 +191,7 @@ For entering the database in terminal mode. By default, the mongodb docker is co
 
 Check that at least the mongo and web containers are up & running:
 
-```
+```sh
 $ docker ps -a
 CONTAINER ID   IMAGE           COMMAND                  CREATED         STATUS         PORTS                    NAMES
 XXXXXXXXXXXX   website_image   "pm2-runtime start e…"   4 minutes ago   Up 4 minutes   0.0.0.0:8080->3001/tcp   my_website
@@ -200,7 +200,7 @@ XXXXXXXXXXXX   mongo:6         "docker-entrypoint.s…"   4 minutes ago   Up 4 m
 
 ### Inspect docker network 
 
-```
+```sh
 docker network inspect my_network
 ```
 
@@ -258,6 +258,6 @@ should show something like:
 
 Show logs for a container:
 
-```
+```sh
 docker logs my_web_container
 ```

@@ -113,7 +113,7 @@ The **DB_HOST** must be the same name as the **mongodb container_name** in the *
 
 For building the services via **docker compose**, please execute the following instruction from the root of this project:
 
-```
+```sh
 docker-compose up -d
 ```
 
@@ -127,7 +127,7 @@ While the mongodb and website containers will remain up, the loader must be call
 
 **List** database documents:
 
-```
+```sh
 docker-compose run loader list
 ```
 
@@ -135,7 +135,7 @@ docker-compose run loader list
 
 As the database comes empty, it's necessary to load some data for running the website properly. The route for the upload.json must be the same defined as **working_dir** in the **docker-compose.yml** file (ie /data). And the upload.json file must be in the **volumes** path defined in the **docker-compose.yml** file.
 
-```
+```sh
 docker-compose run loader load /data/upload.json
 ```
 
@@ -175,7 +175,7 @@ Note that, in this proof of concept, the front-end shows the files in a 3D struc
 
 **Remove** database document:
 
-```
+```sh
 docker-compose run loader remove -d <ID>
 ```
 
@@ -193,19 +193,19 @@ Or modify the port by the one defined as **ports** in the **docker-compose.yml**
 
 For **stopping** all the services (website and mongodb):
 
-```
+```sh
 docker-compose stop
 ```
 
 For **stopping** all the services (website and mongodb) and **remove** all up images:
 
-```
+```sh
 docker-compose down
 ```
 
 For **starting** all the services (website and mongodb):
 
-```
+```sh
 docker-compose start
 ```
 
@@ -217,30 +217,30 @@ Ie when developing and doing changes in git repo.
 
 1. Stop all containers and remove all images: 
 
-    ```
+    ```sh
     docker-compose down --rmi all
     ```
 
 2. Rebuild images avoiding cache:
 
-    ```
+    ```sh
     docker-compose build --no-cache
     ```
 
 3. Up services:
-    ```
+    ```sh
     docker-compose up -d
     ```
 
 ### Execute mongo docker in terminal mode
 
-```
+```sh
 docker exec -it my_mongo_container bash
 ```
 
 And then: 
 
-```
+```sh
 mongosh 
 ```
 
@@ -250,7 +250,7 @@ For entering the database in terminal mode. By default, the mongodb docker is co
 
 Check that at least the mongo and web containers are up & running:
 
-```
+```sh
 $ docker ps -a
 CONTAINER ID   IMAGE           COMMAND                  CREATED         STATUS         PORTS                    NAMES
 XXXXXXXXXXXX   website_image   "pm2-runtime start e…"   4 minutes ago   Up 4 minutes   0.0.0.0:8080->3001/tcp   my_website
@@ -259,7 +259,7 @@ XXXXXXXXXXXX   mongo:6         "docker-entrypoint.s…"   4 minutes ago   Up 4 m
 
 ### Inspect docker network 
 
-```
+```sh
 docker network inspect my_network
 ```
 
@@ -317,7 +317,7 @@ should show something like:
 
 Show logs for a container:
 
-```
+```sh
 docker logs my_web_container
 ```
 
