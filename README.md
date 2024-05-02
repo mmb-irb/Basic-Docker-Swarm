@@ -1,7 +1,7 @@
 
 # Docker web services
 
-In this **proof of concept** there are all the files needed for executing the different services needed for executing a website: **front-end**, **back-end**, **database** and **data loader**. All these services have been integrated into docker containers and connected between them via docker network.
+In this **proof of concept** there are all the files needed for executing the different services for executing a website: **front-end**, **back-end**, **database** and **data loader**. All these services have been integrated into docker containers and connected between them via docker network.
 
 This help contains the instructions for **launching the services** via **docker-compose**. If you want to launch them via **Dockerfiles**, please [**click here**](via_docker.md).
 
@@ -37,7 +37,49 @@ For this proof of concept, the choosen version of mongo is 6.
 
 Copy docker-compose.yml.git into **docker-compose.yml** and modify the volumes' routes. 
 
-Take a look as well at the website ports. It may change depending on the host configuration. Changing the port implies to change it as well in the website/Dockerfile.
+Take a look as well at the **website ports**. They may change depending on the host configuration. Changing the port implies to change it as well in the [**website/Dockerfile**](website/Dockerfile).
+
+```yaml
+version: '3.8'
+
+services:
+  loader:
+    image: loader_image   # name of loader image
+    container_name: my_loader   # name of loader container
+    build:
+      context: ./loader   # folder to search Dockerfile for this image
+    depends_on:
+      - mongodb
+    working_dir: /data
+    volumes:
+      - /path/to/loader/files:/data   # path where the loader will look for files
+    networks:
+      - my_network
+
+  website:
+    image: website_image
+    container_name: my_website
+    build:
+      context: ./website   # folder to search Dockerfile for this image
+    depends_on:
+      - mongodb
+    ports:
+      - "8080:3001"   # port mapping, be aware that the second port is the same exposed in the website/Dockerfile
+    networks:
+      - my_network
+
+  mongodb:
+    container_name: my_mongo_container
+    image: mongo:6
+    volumes:
+      - /path/to/db:/data/db  # path where the database will be stored (outside the container, in the host machine)
+    networks:
+      - my_network
+
+networks:
+  my_network: 
+    name: my_network    # network name
+```
 
 ### .env file
 
@@ -54,7 +96,7 @@ An `.env` file must be created both in the **loader** and **website** folders. T
 | DB_DATABASE      | string  | name of the dbcollection                        |
 | DB_AUTHSOURCE    | string  | authentication db                               |
 
-Take into account that, by default, the **mongodb docker** is configured without authentication. So, if following the instructions of this README, leave **DB_LOGIN** and **DB_STRING** empty. Example for this proof of concept:
+Take into account that, by default, the **mongodb docker** is configured **without authentication**. So, if following the instructions of this README, leave **DB_LOGIN** and **DB_STRING** empty. Example for this proof of concept:
 
 ```
 DB_LOGIN=
@@ -202,7 +244,7 @@ And then:
 mongosh 
 ```
 
-For entering the database in terminal mode. By default, the mongodb docker is configured without authentication.
+For entering the database in terminal mode. By default, the mongodb docker is configured **without authentication**.
 
 ### Check containers
 

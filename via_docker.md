@@ -1,6 +1,6 @@
-# Docker web services
+# Docker web services (Dockerfile version)
 
-In this **proof of concept** there are all the files needed for executing the different services needed for executing a website: **front-end**, **back-end**, **database** and **data loader**. All these services have been integrated into docker containers and connected between them via docker network.
+In this **proof of concept** there are all the files needed for executing the different services for executing a website: **front-end**, **back-end**, **database** and **data loader**. All these services have been integrated into docker containers and connected between them via docker network.
 
 This help contains the instructions for **launching the services** via **Dockerfiles**. If you want to launch them via **docker-compose**, please [**click here**](README.md).
 
@@ -98,7 +98,7 @@ cd loader
 docker run -w /data -v /path/to/data:/data --network my_network loader_image load /data/upload.json
 ```
 
-Where /path/to/db is the **absolut path** were to save the upload.json file is in the computer. This folder will be **mapped into the docker**.
+Where /path/to/data is the **absolut path** where to save the upload.json file is in the computer as well as the files to upload. This folder will be **mapped into the docker**.
 
 For this proof of concept, the upload.json must have the following format:
 
