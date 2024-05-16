@@ -87,7 +87,7 @@ networks:
 
 An `.env` file must be created both in the **loader** and **website** folders. The file `.env.git` can be taken as an example. The file must contain the following environment variables (the DB user needs to have writing rights):
 
-#### loader
+#### loader
 
 | key              | value   | description                                     |
 | ---------------- | ------- | ----------------------------------------------- |
