@@ -139,6 +139,8 @@ DB_AUTHSOURCE=<DB NAME>
 BASE_URL_DEVELOPMENT=/nuxt-skeleton/
 BASE_URL_STAGING=/nuxt-skeleton/
 BASE_URL_PRODUCTION=/nuxt-skeleton/
+
+CUSTOM=false
 ```
 
 The **DB_HOST** must be the same name as the **mongodb container_name** in the **docker-compose.yml**.
