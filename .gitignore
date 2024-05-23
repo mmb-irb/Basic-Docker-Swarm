@@ -4,3 +4,5 @@ db/
 *.pdb
 *.env
 *.yml
+
+website/config

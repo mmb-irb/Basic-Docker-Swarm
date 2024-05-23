@@ -19,6 +19,10 @@ RUN git clone https://mmb.irbbarcelona.org/gitlab/gbayarri/nuxt-skeleton.git
 # Copy the .env file into the Docker image
 COPY .env /app/nuxt-skeleton
 
+# Copy the config folder into the Docker image (if exists)
+RUN mkdir -p /app/nuxt-skeleton/config
+COPY conf*g /app/nuxt-skeleton/config
+
 # Change working directory to /app/nuxt-skeleton
 WORKDIR /app/nuxt-skeleton
 
