@@ -40,8 +40,6 @@ Copy docker-compose.yml.git into **docker-compose.yml** and modify the volumes' 
 Take a look as well at the **website ports**. They may change depending on the host configuration. Changing the port implies to change it as well in the [**website/Dockerfile**](website/Dockerfile).
 
 ```yaml
-version: '3.8'
-
 services:
   loader:
     image: loader_image   # name of loader image
