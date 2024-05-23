@@ -124,6 +124,7 @@ The **DB_HOST** must be the same name as the **mongodb container_name** in the *
 | BASE_URL_DEVELOPMENT      | string                                   | baseURL for development         |
 | BASE_URL_STAGING          | string                                   | baseURL for staging             |
 | BASE_URL_PRODUCTION       | string                                   | baseURL for production          |
+| CUSTOM                    | boolean                                  | whether or not custom images and styles provided          |
 
 Take into account that, by default, the **mongodb docker** is configured **without authentication**. So, if following the instructions of this README, leave **DB_LOGIN** and **DB_STRING** empty. Example for this proof of concept:
 
@@ -141,6 +142,8 @@ BASE_URL_PRODUCTION=/nuxt-skeleton/
 ```
 
 The **DB_HOST** must be the same name as the **mongodb container_name** in the **docker-compose.yml**.
+
+If `CUSTOM=true`, make sure to provide a **/config folder** in the [website](website) folder with a **custom.css**, **favicon.ico** and **logo.png** files.
 
 The **BASE_URL_DEVELOPMENT** shouldn't be used when running as a docker service. 
 
