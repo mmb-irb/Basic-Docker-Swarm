@@ -37,7 +37,9 @@ For this proof of concept, the choosen version of mongo is 6.
 
 Copy docker-compose.yml.git into **docker-compose.yml** and modify the volumes' routes. 
 
-Take a look as well at the **website ports**. They may change depending on the host configuration. Changing the port implies to change it as well in the [**website/Dockerfile**](website/Dockerfile).
+Take a look as well at the **website ports**. They may change depending on the host configuration. Changing the port **inside the container** implies to change it as well in the [**website/Dockerfile**](website/Dockerfile). If changing the port **on the host machine**, take into account that it must mach with the one defined in the **Set Up of the Virtual Hosts** in the host VM.
+
+Finally, a root credentials **MONGO_INITDB_ROOT_USERNAME** and **MONGO_INITDB_ROOT_USERNAME** for the mongoDB database must be defined as well in this file.
 
 ```yaml
 services:
@@ -69,8 +71,14 @@ services:
   mongodb:
     container_name: my_mongo_container
     image: mongo:6
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ROOT_USER
+      MONGO_INITDB_ROOT_PASSWORD: ROOT_PASSWORD
+    ports:
+      - "27017:27017"
     volumes:
       - /path/to/db:/data/db  # path where the database will be stored (outside the container, in the host machine)
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro # path to the initialization script
     networks:
       - my_network
 
