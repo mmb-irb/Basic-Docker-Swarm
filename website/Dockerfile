@@ -1,17 +1,8 @@
-# Use Alpine Linux as base image
-FROM alpine:latest
+# Stage 1: Build the Nuxt app
+FROM node:18.19.0 AS build
 
-# Install necessary packages
-RUN apk --no-cache add nodejs npm git
-
-# Verify installation
-RUN node --version && npm --version && git --version
-
-# Define working dir
+# Set working directory
 WORKDIR /app
-
-# Define a directory for the volume
-VOLUME /data
 
 # Clone nuxt-skeleton repo
 RUN git clone https://mmb.irbbarcelona.org/gitlab/gbayarri/nuxt-skeleton.git
@@ -26,17 +17,26 @@ COPY conf*g /app/nuxt-skeleton/config
 # Change working directory to /app/nuxt-skeleton
 WORKDIR /app/nuxt-skeleton
 
-# Install packages
+# Install dependencies
 RUN npm install
 
 # Build website in production
 RUN npm run build:production
 
-# remove node_modules folder
-RUN rm -r node_modules
+# Stage 2: Serve the Nuxt app with pm2
+FROM alpine:latest
+
+# Install necessary packages
+RUN apk --no-cache add nodejs npm 
 
 # Install pm2
 RUN npm install pm2 -g
+
+# Set working directory
+WORKDIR /app
+
+# Copy the built Nuxt app from the previous stage
+COPY --from=build /app/nuxt-skeleton/.output /app/.output
 
 # Copy the pm2 configuration file
 COPY ecosystem.config.cjs .

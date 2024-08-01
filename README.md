@@ -96,18 +96,22 @@ An `.env` file must be created both in the **loader** and **website** folders. T
 | DB_DATABASE      | string  | name of the dbcollection                        |
 | DB_AUTHSOURCE    | string  | authentication db                               |
 
-Take into account that, by default, the **mongodb docker** is configured **without authentication**. So, if following the instructions of this README, leave **DB_LOGIN** and **DB_STRING** empty. Example for this proof of concept:
+Example for this proof of concept:
 
 ```
-DB_LOGIN=
-DB_PASSWORD=
+DB_LOGIN=user_rw
+DB_PASSWORD=pwd_rw
 DB_HOST=my_mongo_container
 DB_PORT=27017
-DB_DATABASE=<DB NAME>
-DB_AUTHSOURCE=<DB NAME>
+DB_DATABASE=my_db
+DB_AUTHSOURCE=my_db
 ```
 
 The **DB_HOST** must be the same name as the **mongodb container_name** in the **docker-compose.yml**.
+
+The **DB_DATABASE** and **DB_AUTHSOURCE** must be the same used in the **mongo-init.js** file.
+
+The credentials **DB_LOGIN** and **DB_PASSWORD** must be the same defined in the **mongo-init.js** file with the **readWrite** role.
 
 #### website 
 
@@ -124,15 +128,15 @@ The **DB_HOST** must be the same name as the **mongodb container_name** in the *
 | BASE_URL_PRODUCTION       | string                                   | baseURL for production          |
 | CUSTOM                    | boolean                                  | whether or not custom images and styles provided          |
 
-Take into account that, by default, the **mongodb docker** is configured **without authentication**. So, if following the instructions of this README, leave **DB_LOGIN** and **DB_STRING** empty. Example for this proof of concept:
+Example for this proof of concept:
 
 ```
-DB_LOGIN=
-DB_PASSWORD=
+DB_LOGIN=user_r
+DB_PASSWORD=pwd_r
 DB_HOST=my_mongo_container
 DB_PORT=27017
-DB_DATABASE=<DB NAME>
-DB_AUTHSOURCE=<DB NAME>
+DB_DATABASE=my_db
+DB_AUTHSOURCE=my_db
 
 BASE_URL_DEVELOPMENT=/nuxt-skeleton/
 BASE_URL_STAGING=/nuxt-skeleton/
@@ -143,6 +147,10 @@ CUSTOM=false
 
 The **DB_HOST** must be the same name as the **mongodb container_name** in the **docker-compose.yml**.
 
+The **DB_DATABASE** and **DB_AUTHSOURCE** must be the same used in the **mongo-init.js** file.
+
+The credentials **DB_LOGIN** and **DB_PASSWORD** must be the same defined in the **mongo-init.js** file with the **read** role.
+
 If `CUSTOM=true`, make sure to provide a **/config folder** in the [website](website) folder with a **custom.css**, **favicon.ico** and **logo.png** files.
 
 The **BASE_URL_DEVELOPMENT** shouldn't be used when running as a docker service. 
@@ -150,6 +158,8 @@ The **BASE_URL_DEVELOPMENT** shouldn't be used when running as a docker service.
 ⚠️ The [**website/Dockerfile**](website/Dockerfile) is configured for running the website in **production** mode. This means that it will take **BASE_URL_PRODUCTION** as **baseURL**. For changing this, please edit the [**website/Dockerfile**](website/Dockerfile) line: `RUN npm run build:production` ⚠️
 
 ## Build services
+
+> NOTE: **From July 2024 onwards**, the instruction for docker compose in **mac** is without hyphen, so from now on, `docker-compose up -d` is `docker compose up -d` when executing in **macOS**.
 
 For building the services via **docker compose**, please execute the following instruction from the root of this project:
 

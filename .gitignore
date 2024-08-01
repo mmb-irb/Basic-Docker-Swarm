@@ -4,5 +4,7 @@ db/
 *.pdb
 *.env
 *.yml
+!docker-compose-git.yml
+*.old
 
 website/config
