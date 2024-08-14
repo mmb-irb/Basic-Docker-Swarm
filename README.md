@@ -3,7 +3,7 @@
 
 In this **proof of concept** there are all the files needed for executing the different services for executing a website: **front-end**, **back-end**, **database** and **data loader**. All these services have been integrated into docker containers and connected between them via docker network.
 
-This help contains the instructions for **launching the services** via **docker-compose**. If you want to launch them via **Dockerfiles**, please [**click here**](via_docker.md).
+This help contains the instructions for **launching the services** via **docker swarm**. If you want to launch them via **Dockerfiles**, please [**click here**](via_docker.md). If you want to launch them via **docker-compose**, please [**click here**](via-docker-compose.md)
 
 ## Services description
 
@@ -503,7 +503,7 @@ should show something like:
 ]
 ```
 
-### Scale a service:
+### Scale a service:
 
 Add two more replicas to my_stack_website:
 
@@ -511,7 +511,7 @@ Add two more replicas to my_stack_website:
 docker service scale my_stack_website=4
 ```
 
-### Check service tasks
+### Check service tasks
 
 ```sh
 docker service ps my_stack_mongodb
