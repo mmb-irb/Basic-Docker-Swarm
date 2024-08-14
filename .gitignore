@@ -3,8 +3,7 @@ db/
 *.json
 *.pdb
 *.env
-*.yml
-!docker-compose-git.yml
+*.ok.yml
 *.old
 
 website/config

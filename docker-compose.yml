@@ -1,0 +1,76 @@
+services:
+  loader:
+    image: loader_image   # name of loader image
+    build:
+      context: ./loader   # folder to search Dockerfile for this image
+    depends_on:
+      - mongodb
+    #working_dir: /data
+    volumes:
+      - ${LOADER_VOLUME_PATH}:/data   # path where the loader will look for files
+    networks:
+      - my_network
+    deploy:
+      resources:
+        limits:
+          cpus: ${LOADER_CPU_LIMIT}   # Specify the limit number of CPUs
+          memory: ${LOADER_MEMORY_LIMIT}   # Specify the limit memory
+        reservations:
+          cpus: ${LOADER_CPU_RESERVATION}   # Specify the reserved number of CPUs
+          memory: ${LOADER_MEMORY_RESERVATION}   # Specify the reserved memory
+      restart_policy:
+        condition: none  # Do not restart automatically
+
+  website:
+    image: website_image   # name of website image
+    build:
+      context: ./website  # folder to search Dockerfile for this image
+    depends_on:
+      - mongodb
+    ports:
+      - "8080:3001"   # port mapping, be aware that the second port is the same exposed in the website/Dockerfile
+    networks:
+      - my_network
+    deploy:
+      replicas: 2   # Specify the number of replicas for Docker Swarm
+      resources:
+        limits:
+          cpus: ${WEBSITE_CPU_LIMIT}   # Specify the limit number of CPUs
+          memory: ${WEBSITE_MEMORY_LIMIT}   # Specify the limit memory
+        reservations:
+          cpus: ${WEBSITE_CPU_RESERVATION}   # Specify the reserved number of CPUs
+          memory: ${WEBSITE_MEMORY_RESERVATION}   # Specify the reserved memory
+      restart_policy:
+        condition: any  # Do not restart automatically
+      update_config:
+        order: start-first  # Priority over other services
+
+  mongodb:
+    image: mongo:6
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+    ports:
+      - "27017:27017"
+    volumes:
+      - ${DB_VOLUME_PATH}:/data/db   # path where the database will be stored (outside the container, in the host machine)
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro   # path to the initialization script
+    networks:
+      - my_network
+    deploy:
+      replicas: 1   # Specify the number of replicas for Docker Swarm
+      resources:
+        limits:
+          cpus: ${DB_CPU_LIMIT}    # Specify the limit number of CPUs
+          memory: ${DB_MEMORY_LIMIT}   # Specify the limit memory
+        reservations:
+          cpus: ${DB_CPU_RESERVATION}   # Specify the reserved number of CPUs
+          memory: ${DB_MEMORY_RESERVATION}   # Specify the reserved memory
+      restart_policy:
+        condition: on-failure
+
+networks:
+  my_network: 
+    name: my_network    # network name
+    driver: overlay
+    attachable: true

@@ -3,7 +3,7 @@
 
 In this **proof of concept** there are all the files needed for executing the different services for executing a website: **front-end**, **back-end**, **database** and **data loader**. All these services have been integrated into docker containers and connected between them via docker network.
 
-This help contains the instructions for **launching the services** via **docker-compose**. If you want to launch them via **Dockerfiles**, please [**click here**](via_docker.md).
+This help contains the instructions for **launching the services** via **docker swarm**. If you want to launch them via **Dockerfiles**, please [**click here**](via_docker.md). If you want to launch them via **docker swarm**, please [**click here**](README.md). If you want to launch them via **docker-compose**, please [**click here**](via-docker-compose.md).
 
 ## Services description
 
@@ -39,113 +39,59 @@ Copy docker-compose.yml.git into **docker-compose.yml** and modify the volumes' 
 
 Take a look as well at the **website ports**. They may change depending on the host configuration. Changing the port **inside the container** implies to change it as well in the [**website/Dockerfile**](website/Dockerfile). If changing the port **on the host machine**, take into account that it must mach with the one defined in the **Set Up of the Virtual Hosts** in the host VM.
 
+Finally, a root credentials **MONGO_INITDB_ROOT_USERNAME** and **MONGO_INITDB_ROOT_USERNAME** for the mongoDB database must be defined as well in this file.
+
 ```yaml
 services:
   loader:
     image: loader_image   # name of loader image
+    container_name: my_loader   # name of loader container
     build:
       context: ./loader   # folder to search Dockerfile for this image
     depends_on:
       - mongodb
     working_dir: /data
     volumes:
-      - ${LOADER_VOLUME_PATH}:/data   # path where the loader will look for files
+      - /path/to/loader/files:/data   # path where the loader will look for files
     networks:
       - my_network
-    deploy:
-      resources:
-        limits:
-          cpus: ${LOADER_CPU_LIMIT}   # Specify the limit number of CPUs
-          memory: ${LOADER_MEMORY_LIMIT}   # Specify the limit memory
-        reservations:
-          cpus: ${LOADER_CPU_RESERVATION}   # Specify the reserved number of CPUs
-          memory: ${LOADER_MEMORY_RESERVATION}   # Specify the reserved memory
-      restart_policy:
-        condition: none  # Do not restart automatically
 
   website:
-    image: website_image   # name of website image
+    image: website_image
+    container_name: my_website
     build:
-      context: ./website  # folder to search Dockerfile for this image
+      context: ./website   # folder to search Dockerfile for this image
     depends_on:
       - mongodb
     ports:
       - "8080:3001"   # port mapping, be aware that the second port is the same exposed in the website/Dockerfile
     networks:
       - my_network
-    deploy:
-      replicas: 2   # Specify the number of replicas for Docker Swarm
-      resources:
-        limits:
-          cpus: ${WEBSITE_CPU_LIMIT}   # Specify the limit number of CPUs
-          memory: ${WEBSITE_MEMORY_LIMIT}   # Specify the limit memory
-        reservations:
-          cpus: ${WEBSITE_CPU_RESERVATION}   # Specify the reserved number of CPUs
-          memory: ${WEBSITE_MEMORY_RESERVATION}   # Specify the reserved memory
-      restart_policy:
-        condition: any  # Do not restart automatically
-      update_config:
-        order: start-first  # Priority over other services
 
   mongodb:
+    container_name: my_mongo_container
     image: mongo:6
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+      MONGO_INITDB_ROOT_USERNAME: ROOT_USER
+      MONGO_INITDB_ROOT_PASSWORD: ROOT_PASSWORD
     ports:
       - "27017:27017"
     volumes:
-      - ${DB_VOLUME_PATH}:/data/db   # path where the database will be stored (outside the container, in the host machine)
-      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro   # path to the initialization script
+      - /path/to/db:/data/db  # path where the database will be stored (outside the container, in the host machine)
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro # path to the initialization script
     networks:
       - my_network
-    deploy:
-      replicas: 1   # Specify the number of replicas for Docker Swarm
-      resources:
-        limits:
-          cpus: ${DB_CPU_LIMIT}    # Specify the limit number of CPUs
-          memory: ${DB_MEMORY_LIMIT}   # Specify the limit memory
-        reservations:
-          cpus: ${DB_CPU_RESERVATION}   # Specify the reserved number of CPUs
-          memory: ${DB_MEMORY_RESERVATION}   # Specify the reserved memory
-      restart_policy:
-        condition: on-failure
 
 networks:
   my_network: 
     name: my_network    # network name
-    driver: overlay
-    attachable: true
 ```
-
-All the variables are defined in a `.env` file. See following section.
 
 ### .env file
 
 ⚠️ No sensible default value is provided for any of these fields, they **need to be defined** ⚠️
 
-An `.env` file must be created in the **root**, the **loader** and **website** folders. The file `.env.git` can be taken as an example. The file must contain the following environment variables (the DB user needs to have writing rights):
-
-#### root
-
-| key              | value   | description                                     |
-| ---------------- | ------- | ----------------------------------------------- |
-| LOADER_VOLUME_PATH         | string  | path where the loader will look for files                                        |
-| LOADER_CPU_LIMIT      | string  | loader limit number of CPUs                                    |
-| LOADER_MEMORY_LIMIT          | string | loader limit memory                           |
-| LOADER_CPU_RESERVATION          | string  | loader reserved number of CPUs                           |
-| LOADER_MEMORY_RESERVATION      | string  | loader reserved memory                         |
-| WEBSITE_CPU_LIMIT    | string  | website limit number of CPUs                               |
-| WEBSITE_MEMORY_LIMIT    | string  | website limit memory                             |
-| WEBSITE_CPU_RESERVATION    | string  | website reserved number of CPUs                               |
-| WEBSITE_MEMORY_RESERVATION    | string  | website reserved memory                               |
-| DB_VOLUME_PATH         | string  | path where the DB will look for files                                        |
-| DB_CPU_LIMIT      | string  | DB limit number of CPUs                                    |
-| DB_MEMORY_LIMIT          | string | DB limit memory                           |
-| DB_CPU_RESERVATION          | string  | DB reserved number of CPUs                           |
-| DB_MEMORY_RESERVATION      | string  | DB reserved memory                         |
-| MONGO_INITDB_ROOT_USERNAME      | string  | root user for the DB                         |
-| MONGO_INITDB_ROOT_PASSWORD      | string  | root password for the DB                       |
+An `.env` file must be created both in the **loader** and **website** folders. The file `.env.git` can be taken as an example. The file must contain the following environment variables (the DB user needs to have writing rights):
 
 #### loader
 
@@ -163,13 +109,13 @@ Example for this proof of concept:
 ```
 DB_LOGIN=user_rw
 DB_PASSWORD=pwd_rw
-DB_HOST=my_stack_mongodb
+DB_HOST=my_mongo_container
 DB_PORT=27017
 DB_DATABASE=my_db
 DB_AUTHSOURCE=my_db
 ```
 
-The **DB_HOST** must be the name of the **stack service** followed by **underscore** and the **name of the service** as defined in the [**docker-compose.yml**](#docker-composeyml) file.
+The **DB_HOST** must be the same name as the **mongodb container_name** in the **docker-compose.yml**.
 
 The **DB_DATABASE** and **DB_AUTHSOURCE** must be the same used in the **mongo-init.js** file.
 
@@ -195,7 +141,7 @@ Example for this proof of concept:
 ```
 DB_LOGIN=user_r
 DB_PASSWORD=pwd_r
-DB_HOST=my_stack_mongodb
+DB_HOST=my_mongo_container
 DB_PORT=27017
 DB_DATABASE=my_db
 DB_AUTHSOURCE=my_db
@@ -207,7 +153,7 @@ BASE_URL_PRODUCTION=/nuxt-skeleton/
 CUSTOM=false
 ```
 
-The **DB_HOST** must be the name of the **stack service** followed by **underscore** and the **name of the service** as defined in the [**docker-compose.yml**](#docker-composeyml) file.
+The **DB_HOST** must be the same name as the **mongodb container_name** in the **docker-compose.yml**.
 
 The **DB_DATABASE** and **DB_AUTHSOURCE** must be the same used in the **mongo-init.js** file.
 
@@ -223,36 +169,13 @@ The **BASE_URL_DEVELOPMENT** shouldn't be used when running as a docker service.
 
 > NOTE: **From July 2024 onwards**, the instruction for docker compose in **mac** is without hyphen, so from now on, `docker-compose up -d` is `docker compose up -d` when executing in **macOS**.
 
-First off, go to the root of the project. Then, init **docker swarm**:
+For building the services via **docker compose**, please execute the following instruction from the root of this project:
 
 ```sh
-docker swarm init
+docker-compose up -d
 ```
 
-For building the services via **docker compose**, please execute the following instruction:
-
-```sh
-docker-compose build
-```
-
-Export environment variables defined in [**root .env file**](#root) and deploy docker stack:
-
-```sh
-export $(grep -v '^#' .env | xargs)
-docker stack deploy -c docker-compose.yml my_stack
-```
-
-Check services:
-
-```sh
-docker stack services my_stack
-```
-
-Check nodes:
-
-```sh
-docker node ls
-```
+This instruction will run docker-compose in background and it will create the three services described in the first section.
 
 ## Execute services
 
@@ -263,7 +186,7 @@ While the mongodb and website containers will remain up, the loader must be call
 **List** database documents:
 
 ```sh
-docker container run --rm -it --network my_network loader_image list
+docker-compose run loader list
 ```
 
 **Load** documents to database:
@@ -271,7 +194,7 @@ docker container run --rm -it --network my_network loader_image list
 As the database comes empty, it's necessary to load some data for running the website properly. The route for the upload.json must be the same defined as **working_dir** in the **docker-compose.yml** file (ie /data). And the upload.json file must be in the **volumes** path defined in the **docker-compose.yml** file.
 
 ```sh
-docker container run --rm -it --network my_network loader_image load /data/upload.json
+docker-compose run loader load /data/upload.json
 ```
 
 For this proof of concept, the upload.json must have the following format:
@@ -311,7 +234,7 @@ Note that, in this proof of concept, the front-end shows the files in a 3D struc
 **Remove** database document:
 
 ```sh
-docker container run --rm -it --network my_network loader_image remove -d <ID>
+docker-compose run loader remove -d <ID>
 ```
 
 ### Check website
@@ -326,19 +249,46 @@ Or modify the port by the one defined as **ports** in the **docker-compose.yml**
 
 ## Stop / start services
 
-Remove stack:
+For **stopping** all the services (website and mongodb):
 
 ```sh
-docker stack rm my_stack
+docker-compose stop
 ```
 
-Leave swarm:
+For **stopping** all the services (website and mongodb) and **remove** all up images:
 
 ```sh
-docker swarm leave --force
+docker-compose down
+```
+
+For **starting** all the services (website and mongodb):
+
+```sh
+docker-compose start
 ```
 
 ## Tips
+
+### Avoid cache for docker-compose
+
+Ie when developing and doing changes in git repo.
+
+1. Stop all containers and remove all images: 
+
+    ```sh
+    docker-compose down --rmi all
+    ```
+
+2. Rebuild images avoiding cache:
+
+    ```sh
+    docker-compose build --no-cache
+    ```
+
+3. Up services:
+    ```sh
+    docker-compose up -d
+    ```
 
 ### Clean docker
 
@@ -382,7 +332,7 @@ When working with Docker, **even after removing images and containers**, Docker 
 ### Execute mongo docker in terminal mode
 
 ```sh
-docker exec -it <mongo_container_ID> bash
+docker exec -it my_mongo_container bash
 ```
 
 And then: 
@@ -413,14 +363,13 @@ Take into account that acessing mongoDB as **root/admin** user is **not recommen
 
 ### Check containers
 
-Check that at least the mongo and the replicas of web containers are up & running:
+Check that at least the mongo and web containers are up & running:
 
 ```sh
 $ docker ps -a
-CONTAINER ID   IMAGE                  COMMAND                  CREATED          STATUS                      PORTS       NAMES
-XXXXXXXXXXXX   mongo:6                "docker-entrypoint.s…"   21 minutes ago   Up 21 minutes               27017/tcp   my_stack_mongodb.1.<ID>
-XXXXXXXXXXXX   website_image:latest   "pm2-runtime start e…"   21 minutes ago   Up 21 minutes               3001/tcp    my_stack_website.1.<ID>
-XXXXXXXXXXXX   website_image:latest   "pm2-runtime start e…"   21 minutes ago   Up 21 minutes               3001/tcp    my_stack_website.2.<ID>
+CONTAINER ID   IMAGE           COMMAND                  CREATED         STATUS         PORTS                    NAMES
+XXXXXXXXXXXX   website_image   "pm2-runtime start e…"   4 minutes ago   Up 4 minutes   0.0.0.0:8080->3001/tcp   my_website
+XXXXXXXXXXXX   mongo:6         "docker-entrypoint.s…"   4 minutes ago   Up 4 minutes   27017/tcp                my_mongo_container
 ```
 
 ### Inspect docker network 
@@ -437,12 +386,12 @@ should show something like:
         "Name": "my_network",
         "Id": "<ID>",
         "Created": "<DATE>",
-        "Scope": "swarm",
-        "Driver": "overlay",
+        "Scope": "local",
+        "Driver": "bridge",
         "EnableIPv6": false,
         "IPAM": {
             "Driver": "default",
-            "Options": null,
+            "Options": {},
             "Config": [
                 {
                     "Subnet": "<IP>",
@@ -451,7 +400,7 @@ should show something like:
             ]
         },
         "Internal": false,
-        "Attachable": true,
+        "Attachable": false,
         "Ingress": false,
         "ConfigFrom": {
             "Network": ""
@@ -459,70 +408,32 @@ should show something like:
         "ConfigOnly": false,
         "Containers": {
             "<ID>": {
-                "Name": "my_stack_website.2.<ID>",
+                "Name": "my_mongo_container",
                 "EndpointID": "<ID>",
                 "MacAddress": "<MAC>",
                 "IPv4Address": "<IP>",
                 "IPv6Address": ""
             },
             "<ID>": {
-                "Name": "my_stack_website.1.<ID>",
-                "EndpointID": "<ID>",
-                "MacAddress": "<MAC>",
-                "IPv4Address": "<IP>",
-                "IPv6Address": ""
-            },
-            "<ID>": {
-                "Name": "my_stack_mongodb.1.<ID>",
-                "EndpointID": "<ID>",
-                "MacAddress": "<MAC>",
-                "IPv4Address": "<IP>",
-                "IPv6Address": ""
-            },
-            "lb-my_network": {
-                "Name": "my_network-endpoint",
+                "Name": "my_website",
                 "EndpointID": "<ID>",
                 "MacAddress": "<MAC>",
                 "IPv4Address": "<IP>",
                 "IPv6Address": ""
             }
         },
-        "Options": {
-            "com.docker.network.driver.overlay.vxlanid_list": "<ID>"
-        },
-        "Labels": {
-            "com.docker.stack.namespace": "my_stack"
-        },
-        "Peers": [
-            {
-                "Name": "<ID>",
-                "IP": "<IP>"
-            }
-        ]
+        "Options": {},
+        "Labels": {}
     }
 ]
 ```
 
-### Scale a service:
-
-Add two more replicas to my_stack_website:
-
-```sh
-docker service scale my_stack_website=4
-```
-
-### Check service tasks
-
-```sh
-docker service ps my_stack_mongodb
-```
-
 ### Docker logs
 
-Show logs for a service:
+Show logs for a container:
 
 ```sh
-docker service logs my_stack_mongodb
+docker logs my_web_container
 ```
 
 ## Credits
