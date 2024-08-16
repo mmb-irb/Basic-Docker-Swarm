@@ -5,9 +5,8 @@ services:
       context: ./loader   # folder to search Dockerfile for this image
     depends_on:
       - mongodb
-    #working_dir: /data
     volumes:
-      - ${LOADER_VOLUME_PATH}:/data   # path where the loader will look for files
+      - loader_volume:/data   # volume mapping, be aware that the second path is the same exposed in the loader/Dockerfile
     networks:
       - my_network
     deploy:
@@ -41,7 +40,7 @@ services:
           cpus: ${WEBSITE_CPU_RESERVATION}   # Specify the reserved number of CPUs
           memory: ${WEBSITE_MEMORY_RESERVATION}   # Specify the reserved memory
       restart_policy:
-        condition: any  # Do not restart automatically
+        condition: any   # Restart always
       update_config:
         order: start-first  # Priority over other services
 
@@ -67,7 +66,15 @@ services:
           cpus: ${DB_CPU_RESERVATION}   # Specify the reserved number of CPUs
           memory: ${DB_MEMORY_RESERVATION}   # Specify the reserved memory
       restart_policy:
-        condition: on-failure
+        condition: on-failure   # Restart only on failure
+
+volumes:
+  loader_volume:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${LOADER_VOLUME_PATH}   # bind the volume to LOADER_VOLUME_PATH on the host
 
 networks:
   my_network: 

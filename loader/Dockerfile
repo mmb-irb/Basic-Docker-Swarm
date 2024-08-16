@@ -10,9 +10,6 @@ RUN node --version && npm --version && git --version
 # Define working dir
 WORKDIR /app
 
-# Define a directory for the volume
-VOLUME /data
-
 # Clone loader repo
 RUN git clone https://mmb.irbbarcelona.org/gitlab/gbayarri/loader-base.git
 

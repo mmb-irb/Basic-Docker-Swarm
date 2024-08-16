@@ -35,7 +35,7 @@ For this proof of concept, the choosen version of mongo is 6.
 
 ### docker-compose.yml
 
-Copy docker-compose.yml.git into **docker-compose.yml** and modify the volumes' routes. 
+The [**docker-compose.yml**](./docker-compose.yml) is the file that specifies what **images** are required, what **ports** they need to expose, whether they have access to the host **filesystem**, what **commands** should be run when they start up, and so on.
 
 Take a look as well at the **website ports**. They may change depending on the host configuration. Changing the port **inside the container** implies to change it as well in the [**website/Dockerfile**](website/Dockerfile). If changing the port **on the host machine**, take into account that it must mach with the one defined in the **Set Up of the Virtual Hosts** in the host VM.
 
@@ -229,6 +229,12 @@ First off, go to the root of the project. Then, init **docker swarm**:
 docker swarm init
 ```
 
+**Note:** when a system has **multiple network** interfaces with **different IP** addresses, Docker Swarm requires you to explicitly **specify which IP** address it should use for advertising:
+
+```sh
+docker swarm init --advertise-addr <IP_ADDRESS>
+```
+
 For building the services via **docker compose**, please execute the following instruction:
 
 ```sh
@@ -268,10 +274,10 @@ docker container run --rm -it --network my_network loader_image list
 
 **Load** documents to database:
 
-As the database comes empty, it's necessary to load some data for running the website properly. The route for the upload.json must be the same defined as **working_dir** in the **docker-compose.yml** file (ie /data). And the upload.json file must be in the **volumes** path defined in the **docker-compose.yml** file.
+As the database comes empty, it's necessary to load some data for running the website properly. The route for the upload.json must be the same defined as **working_dir** in the **docker-compose.yml** file (ie /data). And the upload.json file must be in the **LOADER_VOLUME_PATH** path defined in the [**root .env**](#root) file.
 
 ```sh
-docker container run --rm -it --network my_network loader_image load /data/upload.json
+docker run --rm -it --mount source=my_stack_loader_volume,target=/data --network my_network loader_image load /data/upload.json
 ```
 
 For this proof of concept, the upload.json must have the following format:
