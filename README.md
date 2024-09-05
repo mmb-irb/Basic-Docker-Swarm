@@ -117,7 +117,7 @@ volumes:
 
 networks:
   my_network: 
-    external: true
+    external: true   # Use an external network
 ```
 
 All the variables are defined in a `.env` file. See following section.
@@ -286,14 +286,14 @@ While the **mongodb** and **website** containers will remain up, the loader must
 **List** database documents:
 
 ```sh
-docker compose run --rm loader list
+docker-compose run --rm loader list
 ```
 **Load** documents to database:
 
 As the database comes empty, it's necessary to load some data for running the website properly. The route for the upload.json must be the same defined as **working_dir** in the **docker-compose.yml** file (ie /data). And the upload.json file must be in the **LOADER_VOLUME_PATH** path defined in the [**root .env**](#root) file.
 
 ```sh
-docker compose run --rm loader load /data/upload.json
+docker-compose run --rm loader load /data/upload.json
 ```
 
 For this proof of concept, the upload.json must have the following format:
@@ -333,7 +333,7 @@ Note that, in this proof of concept, the front-end shows the files in a 3D struc
 **Remove** database document:
 
 ```sh
-docker compose run --rm loader remove -d <ID>
+docker-compose run --rm loader remove -d <ID>
 ```
 
 ### Check website
