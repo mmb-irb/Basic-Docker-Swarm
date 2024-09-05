@@ -280,7 +280,7 @@ docker node ls
 
 ### Use loader
 
-While the **mongodb** and **website** containers will remain up, the loader must be called every time is needed. As it is a **one-off task**, **Docker Compose** is used for runnint it.
+While the **mongodb** and **website** containers will remain up, the loader must be called every time is needed. As it is a **one-off task**, **Docker Compose** is used for running it.
 
 **List** database documents:
 
@@ -434,14 +434,14 @@ Take into account that acessing mongoDB as **root/admin** user is **not recommen
 
 ### Check containers
 
-Check that at least the mongo and the replicas of web containers are up & running:
+Check that the **mongo** and the replicas of **web containers** are up & running:
 
 ```sh
 $ docker ps -a
 CONTAINER ID   IMAGE                  COMMAND                  CREATED          STATUS                      PORTS       NAMES
-XXXXXXXXXXXX   mongo:6                "docker-entrypoint.s…"   21 minutes ago   Up 21 minutes               27017/tcp   my_stack_mongodb.1.<ID>
-XXXXXXXXXXXX   website_image:latest   "pm2-runtime start e…"   21 minutes ago   Up 21 minutes               3001/tcp    my_stack_website.1.<ID>
-XXXXXXXXXXXX   website_image:latest   "pm2-runtime start e…"   21 minutes ago   Up 21 minutes               3001/tcp    my_stack_website.2.<ID>
+<ID>           mongo:6                "docker-entrypoint.s…"   21 minutes ago   Up 21 minutes               27017/tcp   my_stack_mongodb.1.<ID>
+<ID>           website_image:latest   "pm2-runtime start e…"   21 minutes ago   Up 21 minutes               3001/tcp    my_stack_website.1.<ID>
+<ID>           website_image:latest   "pm2-runtime start e…"   21 minutes ago   Up 21 minutes               3001/tcp    my_stack_website.2.<ID>
 ```
 
 ### Inspect docker network 
