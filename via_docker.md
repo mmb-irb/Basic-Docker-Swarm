@@ -2,7 +2,7 @@
 
 In this **proof of concept** there are all the files needed for executing the different services for executing a website: **front-end**, **back-end**, **database** and **data loader**. All these services have been integrated into docker containers and connected between them via docker network.
 
-This help contains the instructions for **launching the services** via **Dockerfiles**. If you want to launch them via **docker-compose**, please [**click here**](via-docker-compose.md). If you want to launch them via **docker swarm**, please [**click here**](README.md).
+This help contains the instructions for **launching the services** via **Dockerfiles**. If you want to launch them via **docker-compose**, please [**click here**](via_docker_compose.md). If you want to launch them via **docker swarm**, please [**click here**](README.md).
 
 ## Services description
 

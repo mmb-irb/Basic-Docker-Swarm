@@ -3,13 +3,12 @@ services:
     image: loader_image   # name of loader image
     build:
       context: ./loader   # folder to search Dockerfile for this image
-    depends_on:
-      - mongodb
     volumes:
-      - loader_volume:/data   # volume mapping, be aware that the second path is the same exposed in the loader/Dockerfile
+      - loader_volume:/data   # path from where the data will be taken
     networks:
       - my_network
     deploy:
+      replicas: 0  # Ensure this service is not deployed by default
       resources:
         limits:
           cpus: ${LOADER_CPU_LIMIT}   # Specify the limit number of CPUs
@@ -17,8 +16,6 @@ services:
         reservations:
           cpus: ${LOADER_CPU_RESERVATION}   # Specify the reserved number of CPUs
           memory: ${LOADER_MEMORY_RESERVATION}   # Specify the reserved memory
-      restart_policy:
-        condition: none  # Do not restart automatically
 
   website:
     image: website_image   # name of website image
@@ -78,6 +75,4 @@ volumes:
 
 networks:
   my_network: 
-    name: my_network    # network name
-    driver: overlay
-    attachable: true
+    external: true

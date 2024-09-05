@@ -3,7 +3,7 @@
 
 In this **proof of concept** there are all the files needed for executing the different services for executing a website: **front-end**, **back-end**, **database** and **data loader**. All these services have been integrated into docker containers and connected between them via docker network.
 
-This help contains the instructions for **launching the services** via **docker swarm**. If you want to launch them via **Dockerfiles**, please [**click here**](via_docker.md). If you want to launch them via **docker-compose**, please [**click here**](via-docker-compose.md)
+This help contains the instructions for **launching the services** via **docker swarm**. If you want to launch them via **Dockerfiles**, please [**click here**](via_docker.md). If you want to launch them via **docker-compose**, please [**click here**](via_docker_compose.md)
 
 ## Services description
 
@@ -45,14 +45,12 @@ services:
     image: loader_image   # name of loader image
     build:
       context: ./loader   # folder to search Dockerfile for this image
-    depends_on:
-      - mongodb
-    working_dir: /data
     volumes:
-      - ${LOADER_VOLUME_PATH}:/data   # path where the loader will look for files
+      - loader_volume:/data   # path from where the data will be taken
     networks:
       - my_network
     deploy:
+      replicas: 0  # Ensure this service is not deployed by default
       resources:
         limits:
           cpus: ${LOADER_CPU_LIMIT}   # Specify the limit number of CPUs
@@ -60,8 +58,6 @@ services:
         reservations:
           cpus: ${LOADER_CPU_RESERVATION}   # Specify the reserved number of CPUs
           memory: ${LOADER_MEMORY_RESERVATION}   # Specify the reserved memory
-      restart_policy:
-        condition: none  # Do not restart automatically
 
   website:
     image: website_image   # name of website image
@@ -83,7 +79,7 @@ services:
           cpus: ${WEBSITE_CPU_RESERVATION}   # Specify the reserved number of CPUs
           memory: ${WEBSITE_MEMORY_RESERVATION}   # Specify the reserved memory
       restart_policy:
-        condition: any  # Do not restart automatically
+        condition: any   # Restart always
       update_config:
         order: start-first  # Priority over other services
 
@@ -109,13 +105,19 @@ services:
           cpus: ${DB_CPU_RESERVATION}   # Specify the reserved number of CPUs
           memory: ${DB_MEMORY_RESERVATION}   # Specify the reserved memory
       restart_policy:
-        condition: on-failure
+        condition: on-failure   # Restart only on failure
+
+volumes:
+  loader_volume:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${LOADER_VOLUME_PATH}   # bind the volume to LOADER_VOLUME_PATH on the host
 
 networks:
   my_network: 
-    name: my_network    # network name
-    driver: overlay
-    attachable: true
+    external: true
 ```
 
 All the variables are defined in a `.env` file. See following section.
@@ -124,7 +126,7 @@ All the variables are defined in a `.env` file. See following section.
 
 ⚠️ No sensible default value is provided for any of these fields, they **need to be defined** ⚠️
 
-An `.env` file must be created in the **root**, the **loader** and **website** folders. The file `.env.git` can be taken as an example. The file must contain the following environment variables (the DB user needs to have writing rights):
+An `.env` file must be created in the **root**, the **loader** and **website** folders. The file `.env.git` can be taken as an example. The file must contain the following environment variables:
 
 #### root
 
@@ -146,6 +148,14 @@ An `.env` file must be created in the **root**, the **loader** and **website** f
 | DB_MEMORY_RESERVATION      | string  | DB reserved memory                         |
 | MONGO_INITDB_ROOT_USERNAME      | string  | root user for the DB                         |
 | MONGO_INITDB_ROOT_PASSWORD      | string  | root password for the DB                       |
+
+**Important:** the formats of **cpus** and **memory** must be in string format between single quotes. Example:
+
+```
+LOADER_VOLUME_PATH=/path/to/loader  # path to volume
+LOADER_CPU_LIMIT='4.00'  # cpus in float format
+LOADER_MEMORY_LIMIT='2G'  # memory indicating unit (G, M)
+```
 
 #### loader
 
@@ -169,7 +179,7 @@ DB_DATABASE=my_db
 DB_AUTHSOURCE=my_db
 ```
 
-The **DB_HOST** must be the name of the **stack service** followed by **underscore** and the **name of the service** as defined in the [**docker-compose.yml**](#docker-composeyml) file.
+The **DB_HOST** must be the name of the **stack service** followed by **underscore** and the **name of the service** as defined in the [**docker-compose.yml**](#docker-compose.yml) file.
 
 The **DB_DATABASE** and **DB_AUTHSOURCE** must be the same used in the **mongo-init.js** file.
 
@@ -207,7 +217,7 @@ BASE_URL_PRODUCTION=/nuxt-skeleton/
 CUSTOM=false
 ```
 
-The **DB_HOST** must be the name of the **stack service** followed by **underscore** and the **name of the service** as defined in the [**docker-compose.yml**](#docker-composeyml) file.
+The **DB_HOST** must be the name of the **stack service** followed by **underscore** and the **name of the service** as defined in the [**docker-compose.yml**](#docker-compose.yml) file.
 
 The **DB_DATABASE** and **DB_AUTHSOURCE** must be the same used in the **mongo-init.js** file.
 
@@ -221,8 +231,6 @@ The **BASE_URL_DEVELOPMENT** shouldn't be used when running as a docker service.
 
 ## Build services
 
-> NOTE: **From July 2024 onwards**, the instruction for docker compose in **mac** is without hyphen, so from now on, `docker-compose up -d` is `docker compose up -d` when executing in **macOS**.
-
 First off, go to the root of the project. Then, init **docker swarm**:
 
 ```sh
@@ -234,6 +242,14 @@ docker swarm init
 ```sh
 docker swarm init --advertise-addr <IP_ADDRESS>
 ```
+
+In order to execute the **long-term** tasks in **Docker Swarm** and the **one-off tasks**, such as the **loader** in this proof of concept, in **Docker Compose**, the **network** is declared as **external** in the **docker-compose.yml** file, so it must be created before the `docker-compose build` and the `docker stak deploy`:
+
+```sh
+docker network create --driver overlay --attachable my_network
+```
+
+> NOTE: **From July 2024 onwards**, the instruction for docker compose in **mac** is without hyphen, so from now on, `docker-compose up -d` is `docker compose up -d` when executing in **macOS**.
 
 For building the services via **docker compose**, please execute the following instruction:
 
@@ -264,20 +280,19 @@ docker node ls
 
 ### Use loader
 
-While the mongodb and website containers will remain up, the loader must be called every time is needed.
+While the **mongodb** and **website** containers will remain up, the loader must be called every time is needed. As it is a **one-off task**, **Docker Compose** is used for runnint it.
 
 **List** database documents:
 
 ```sh
-docker container run --rm -it --network my_network loader_image list
+docker compose run --rm loader list
 ```
-
 **Load** documents to database:
 
 As the database comes empty, it's necessary to load some data for running the website properly. The route for the upload.json must be the same defined as **working_dir** in the **docker-compose.yml** file (ie /data). And the upload.json file must be in the **LOADER_VOLUME_PATH** path defined in the [**root .env**](#root) file.
 
 ```sh
-docker run --rm -it --mount source=my_stack_loader_volume,target=/data --network my_network loader_image load /data/upload.json
+docker compose run --rm loader load /data/upload.json
 ```
 
 For this proof of concept, the upload.json must have the following format:
@@ -317,7 +332,7 @@ Note that, in this proof of concept, the front-end shows the files in a 3D struc
 **Remove** database document:
 
 ```sh
-docker container run --rm -it --network my_network loader_image remove -d <ID>
+docker compose run --rm loader remove -d <ID>
 ```
 
 ### Check website
@@ -521,6 +536,14 @@ docker service scale my_stack_website=4
 
 ```sh
 docker service ps my_stack_mongodb
+```
+
+### Docker stats
+
+Check resources consumption for all running containers:
+
+```sh
+docker stats
 ```
 
 ### Docker logs
