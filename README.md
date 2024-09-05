@@ -3,7 +3,7 @@
 
 In this **proof of concept** there are all the files needed for executing the different services for executing a website: **front-end**, **back-end**, **database** and **data loader**. All these services have been integrated into docker containers and connected between them via docker network.
 
-This help contains the instructions for **launching the services** via **docker swarm**. If you want to launch them via **Dockerfiles**, please [**click here**](via_docker.md). If you want to launch them via **docker-compose**, please [**click here**](via_docker_compose.md)
+This help contains the instructions for **launching the services** via **Docker Swarm**. If you want to launch them via **Dockerfiles**, please [**click here**](via_docker.md). If you want to launch them via **docker-compose**, please [**click here**](via_docker_compose.md)
 
 ## Services description
 
@@ -232,7 +232,7 @@ The **BASE_URL_DEVELOPMENT** shouldn't be used when running as a docker service.
 
 ## Build services
 
-First off, go to the root of the project. Then, init **docker swarm**:
+First off, go to the root of the project. Then, init **Docker Swarm**:
 
 ```sh
 docker swarm init
@@ -250,9 +250,9 @@ In order to execute the **long-term** tasks in **Docker Swarm** and the **one-of
 docker network create --driver overlay --attachable my_network
 ```
 
-> NOTE: **From July 2024 onwards**, the instruction for docker compose in **mac** is without hyphen, so from now on, `docker-compose up -d` is `docker compose up -d` when executing in **macOS**.
+> NOTE: **From July 2024 onwards**, the instruction for Docker Compose in **mac** is without hyphen, so from now on, `docker-compose build` is `docker compose build` when executing in **macOS**.
 
-For building the services via **docker compose**, please execute the following instruction:
+For building the services via **Docker Compose**, please execute the following instruction:
 
 ```sh
 docker-compose build
