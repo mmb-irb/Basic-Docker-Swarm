@@ -132,6 +132,7 @@ An `.env` file must be created in the **root**, the **loader** and **website** f
 
 | key              | value   | description                                     |
 | ---------------- | ------- | ----------------------------------------------- |
+| DOCKER_DEFAULT_PLATFORM         | string  | default platform (architecture and operating system), ie linux/amd64                               |
 | LOADER_VOLUME_PATH         | string  | path where the loader will look for files                                        |
 | LOADER_CPU_LIMIT      | string  | loader limit number of CPUs                                    |
 | LOADER_MEMORY_LIMIT          | string | loader limit memory                           |
@@ -345,7 +346,7 @@ http://localhost:8080
 
 Or modify the port by the one defined as **ports** in the **docker-compose.yml** file.
 
-## Stop / start services
+## Stop services
 
 Remove stack:
 
