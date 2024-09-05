@@ -50,7 +50,7 @@ services:
     networks:
       - my_network
     deploy:
-      replicas: 0  # Ensure this service is not deployed by default
+      replicas: 0  # Ensure this service is not deployed by default as it is an one-time task
       resources:
         limits:
           cpus: ${LOADER_CPU_LIMIT}   # Specify the limit number of CPUs
