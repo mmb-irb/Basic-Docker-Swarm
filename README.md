@@ -1,7 +1,7 @@
 
 # Docker web services
 
-In this **proof of concept** there are all the files needed for executing the different services for executing a website: **front-end**, **back-end**, **database** and **data loader**. All these services have been integrated into docker containers and connected between them via docker network.
+In this **proof of concept** there are all the files needed for executing the different services for executing a website: **apache**, **front-end**, **back-end**, **database** and **data loader**. All these services have been integrated into docker containers and connected between them via docker networks.
 
 This help contains the instructions for **launching the services** via **Docker Swarm**. If you want to launch them via **Dockerfiles**, please [**click here**](via_docker.md). If you want to launch them via **docker-compose**, please [**click here**](via_docker_compose.md).
 
@@ -12,6 +12,12 @@ Schema of web **services**. Each box in the schema is a **service** encapsulated
 </div>
 
 ## Services description
+
+### Apache
+
+The Apache HTTP Server, colloquially called Apache, is a **Web server** application notable for playing a key role in the initial growth of the World Wide Web:
+
+https://hub.docker.com/_/httpd
 
 ### Website
 
@@ -43,20 +49,44 @@ For this proof of concept, the choosen version of mongo is 6.
 
 The [**docker-compose.yml**](./docker-compose.yml) is the file that specifies what **images** are required, what **ports** they need to expose, whether they have access to the host **filesystem**, what **commands** should be run when they start up, and so on.
 
-Take a look as well at the **website ports**. They may change depending on the host configuration. Changing the port **inside the container** implies to change it as well in the [**website/Dockerfile**](website/Dockerfile). If changing the port **on the host machine**, take into account that it must mach with the one defined in the **Set Up of the Virtual Hosts** in the host VM.
-
 ```yaml
 services:
+  apache:
+    image: apache_image   # name of apache image
+    build:
+      context: ./apache   # folder to search Dockerfile for this image
+    ports:
+      - "${APACHE_HTTP_PORT}:80"
+      - "${APACHE_HTTPS_PORT}:443"
+    networks:
+      - webnet
+    deploy:
+      replicas: ${APACHE_REPLICAS}  # Ensure this service is not deployed by default as it is a one-time task
+      resources:
+        limits:
+          cpus: ${APACHE_CPU_LIMIT}   # Specify the limit number of CPUs
+          memory: ${APACHE_MEMORY_LIMIT}   # Specify the limit memory
+        reservations:
+          cpus: ${APACHE_CPU_RESERVATION}   # Specify the reserved number of CPUs
+          memory: ${APACHE_MEMORY_RESERVATION}   # Specify the reserved memory
+
   loader:
     image: loader_image   # name of loader image
     build:
       context: ./loader   # folder to search Dockerfile for this image
+      args:
+        DB_HOST: ${DB_HOST} 
+        DB_PORT: ${DB_PORT}
+        DB_DATABASE: ${DB_DATABASE} 
+        DB_AUTHSOURCE: ${DB_AUTHSOURCE} 
+        LOADER_DB_LOGIN: ${LOADER_DB_LOGIN}
+        LOADER_DB_PASSWORD: ${LOADER_DB_PASSWORD} 
     volumes:
       - loader_volume:/data   # path from where the data will be taken
     networks:
       - my_network
     deploy:
-      replicas: 0  # Ensure this service is not deployed by default as it is a one-time task
+      replicas: ${LOADER_REPLICAS}  # Ensure this service is not deployed by default as it is a one-time task
       resources:
         limits:
           cpus: ${LOADER_CPU_LIMIT}   # Specify the limit number of CPUs
@@ -69,14 +99,26 @@ services:
     image: website_image   # name of website image
     build:
       context: ./website  # folder to search Dockerfile for this image
+      args:
+        DB_HOST: ${DB_HOST}
+        DB_PORT: ${DB_PORT}
+        DB_DATABASE: ${DB_DATABASE}
+        DB_AUTHSOURCE: ${DB_AUTHSOURCE}
+        WEBSITE_DB_LOGIN: ${WEBSITE_DB_LOGIN}
+        WEBSITE_DB_PASSWORD: ${WEBSITE_DB_PASSWORD}
+        WEBSITE_BASE_URL_DEVELOPMENT: ${WEBSITE_BASE_URL_DEVELOPMENT}
+        WEBSITE_BASE_URL_STAGING: ${WEBSITE_BASE_URL_STAGING}
+        WEBSITE_BASE_URL_PRODUCTION: ${WEBSITE_BASE_URL_PRODUCTION}
+        WEBSITE_CUSTOM: ${WEBSITE_CUSTOM}
     depends_on:
       - mongodb
     ports:
-      - "8080:3001"   # port mapping, be aware that the second port is the same exposed in the website/Dockerfile
+      - "${WEBSITE_PORT}:3001"   # port mapping, be aware that the second port is the same exposed in the website/Dockerfile
     networks:
       - my_network
+      - webnet
     deploy:
-      replicas: 2   # Specify the number of replicas for Docker Swarm
+      replicas: ${WEBSITE_REPLICAS}   # Specify the number of replicas for Docker Swarm
       resources:
         limits:
           cpus: ${WEBSITE_CPU_LIMIT}   # Specify the limit number of CPUs
@@ -95,14 +137,14 @@ services:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
     ports:
-      - "27017:27017"
+      - "${DB_PORT}:27017"
     volumes:
       - ${DB_VOLUME_PATH}:/data/db   # path where the database will be stored (outside the container, in the host machine)
       - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro   # path to the initialization script
     networks:
       - my_network
     deploy:
-      replicas: 1   # Specify the number of replicas for Docker Swarm
+      replicas: ${DB_REPLICAS}   # Specify the number of replicas for Docker Swarm
       resources:
         limits:
           cpus: ${DB_CPU_LIMIT}    # Specify the limit number of CPUs
@@ -124,6 +166,9 @@ volumes:
 networks:
   my_network: 
     external: true   # Use an external network
+  webnet:
+    name: webnet   # Name of the network
+    driver: overlay   # Use an overlay network
 ```
 
 All the variables are defined in a `.env` file. See following section.
@@ -132,27 +177,53 @@ All the variables are defined in a `.env` file. See following section.
 
 ⚠️ No sensible default value is provided for any of these fields, they **need to be defined** ⚠️
 
-An `.env` file must be created in the **root**, the **loader** and **website** folders. The file `.env.git` can be taken as an example. The file must contain the following environment variables:
-
-#### root
+An `.env` file must be created in the **root** folder. The file `.env.git` can be taken as an example. The file must contain the following environment variables:
 
 | key              | value   | description                                     |
 | ---------------- | ------- | ----------------------------------------------- |
 | DOCKER_DEFAULT_PLATFORM         | string  | default platform (architecture and operating system), ie linux/amd64                               |
+| &nbsp;
+| APACHE_HTTP_PORT         | number  | apache outer port for http protocol                                        |
+| APACHE_HTTPS_PORT         | number  | apache outer port for https protocol                                        |
+| APACHE_REPLICAS         | number  | apache number of replicas to deploy                                        |
+| APACHE_CPU_LIMIT         | string  | apache limit number of CPUs                                        |
+| APACHE_MEMORY_LIMIT         | string  | apache limit memory                                        |
+| APACHE_CPU_RESERVATION         | string  | apache reserved number of CPUs                                        |
+| APACHE_MEMORY_RESERVATION         | string  | apache reserved memory                                        |
+| &nbsp;
 | LOADER_VOLUME_PATH         | string  | path where the loader will look for files                                        |
+| LOADER_REPLICAS         | number  | loader number of replicas to deploy                                        |
 | LOADER_CPU_LIMIT      | string  | loader limit number of CPUs                                    |
 | LOADER_MEMORY_LIMIT          | string | loader limit memory                           |
 | LOADER_CPU_RESERVATION          | string  | loader reserved number of CPUs                           |
 | LOADER_MEMORY_RESERVATION      | string  | loader reserved memory                         |
+| LOADER_DB_LOGIN      | string  | db user for loader                         |
+| LOADER_DB_PASSWORD      | string  | db password for loader                       |
+| &nbsp;
+| WEBSITE_PORT         | number  | website outer port protocol                                        |
+| WEBSITE_REPLICAS         | number  | website number of replicas to deploy                                        |
 | WEBSITE_CPU_LIMIT    | string  | website limit number of CPUs                               |
 | WEBSITE_MEMORY_LIMIT    | string  | website limit memory                             |
 | WEBSITE_CPU_RESERVATION    | string  | website reserved number of CPUs                               |
 | WEBSITE_MEMORY_RESERVATION    | string  | website reserved memory                               |
+| WEBSITE_DB_LOGIN    | string  | db user for website REST API                               |
+| WEBSITE_DB_PASSWORD    | string  | db password for website REST API                               |
+| WEBSITE_BASE_URL_DEVELOPMENT    | string  | baseURL for development                               |
+| WEBSITE_BASE_URL_STAGING    | string  | baseURL for staging                               |
+| WEBSITE_BASE_URL_PRODUCTION    | string  | baseURL for production                               |
+| WEBSITE_CUSTOM    | string  | whether or not custom images and styles provided                               |
+| &nbsp;
 | DB_VOLUME_PATH         | string  | path where the DB will look for files                                        |
+| DB_PORT         | number  | DB outer port protocol                                        |
+| DB_REPLICAS         | number  | DB number of replicas to deploy                                        |
 | DB_CPU_LIMIT      | string  | DB limit number of CPUs                                    |
 | DB_MEMORY_LIMIT          | string | DB limit memory                           |
 | DB_CPU_RESERVATION          | string  | DB reserved number of CPUs                           |
 | DB_MEMORY_RESERVATION      | string  | DB reserved memory                         |
+| DB_HOST      | `<url>`  | url of the db server                          |
+| DB_DATABASE      | string  | name of the  DB collection                          |
+| DB_AUTHSOURCE      | string  | the DB collection the user will attempt to authenticate to                           |
+| &nbsp;
 | MONGO_INITDB_ROOT_USERNAME      | string  | root user for the DB                         |
 | MONGO_INITDB_ROOT_PASSWORD      | string  | root password for the DB                       |
 
@@ -164,77 +235,19 @@ LOADER_CPU_LIMIT='4.00'  # cpus in float format
 LOADER_MEMORY_LIMIT='2G'  # memory indicating unit (G, M)
 ```
 
-#### loader
-
-| key              | value   | description                                     |
-| ---------------- | ------- | ----------------------------------------------- |
-| DB_LOGIN         | string  | db user                                         |
-| DB_PASSWORD      | string  | db password                                     |
-| DB_HOST          | `<url>` | url of the db server                            |
-| DB_PORT          | number  | port of the db server                           |
-| DB_DATABASE      | string  | name of the dbcollection                        |
-| DB_AUTHSOURCE    | string  | authentication db                               |
-
-Example for this proof of concept:
-
-```
-DB_LOGIN=user_rw
-DB_PASSWORD=pwd_rw
-DB_HOST=my_stack_mongodb
-DB_PORT=27017
-DB_DATABASE=my_db
-DB_AUTHSOURCE=my_db
-```
-
 The **DB_HOST** must be the name of the **stack service** followed by **underscore** and the **name of the service** as defined in the [**docker-compose.yml**](#docker-compose.yml) file.
 
 The **DB_DATABASE** and **DB_AUTHSOURCE** must be the same used in the **mongo-init.js** file.
 
-The credentials **DB_LOGIN** and **DB_PASSWORD** must be the same defined in the **mongo-init.js** file with the **readWrite** role.
+The credentials **LOADER_DB_LOGIN** and **LOADER_DB_PASSWORD** must be the same defined in the **mongo-init.js** file with the **readWrite** role.
 
-#### website 
+The credentials **WEBSITE_DB_LOGIN** and **WEBSITE_DB_PASSWORD** must be the same defined in the **mongo-init.js** file with the **read** role.
 
-| key                       | value                                    | description                     |
-| ------------------------- | ---------------------------------------- | ------------------------------- |
-| DB_LOGIN                  | string                                   | db user                         |
-| DB_PASSWORD               | string                                   | db password                     |
-| DB_HOST                   | `<url>`                                  | url of the db server            |
-| DB_PORT                   | number                                   | port of the db server           |
-| DB_DATABASE               | string                                   | name of the dbcollection        |
-| DB_AUTHSOURCE             | string                                   | the collection the user will attempt to authenticate to    |
-| BASE_URL_DEVELOPMENT      | string                                   | baseURL for development         |
-| BASE_URL_STAGING          | string                                   | baseURL for staging             |
-| BASE_URL_PRODUCTION       | string                                   | baseURL for production          |
-| CUSTOM                    | boolean                                  | whether or not custom images and styles provided          |
+If `WEBSITE_CUSTOM=true`, make sure to provide a **/config folder** in the [website](website) folder with a **custom.css**, **favicon.ico** and **logo.png** files.
 
-Example for this proof of concept:
+The **WEBSITE_BASE_URL_DEVELOPMENT** shouldn't be used when running as a docker service. 
 
-```
-DB_LOGIN=user_r
-DB_PASSWORD=pwd_r
-DB_HOST=my_stack_mongodb
-DB_PORT=27017
-DB_DATABASE=my_db
-DB_AUTHSOURCE=my_db
-
-BASE_URL_DEVELOPMENT=/nuxt-skeleton/
-BASE_URL_STAGING=/nuxt-skeleton/
-BASE_URL_PRODUCTION=/nuxt-skeleton/
-
-CUSTOM=false
-```
-
-The **DB_HOST** must be the name of the **stack service** followed by **underscore** and the **name of the service** as defined in the [**docker-compose.yml**](#docker-compose.yml) file.
-
-The **DB_DATABASE** and **DB_AUTHSOURCE** must be the same used in the **mongo-init.js** file.
-
-The credentials **DB_LOGIN** and **DB_PASSWORD** must be the same defined in the **mongo-init.js** file with the **read** role.
-
-If `CUSTOM=true`, make sure to provide a **/config folder** in the [website](website) folder with a **custom.css**, **favicon.ico** and **logo.png** files.
-
-The **BASE_URL_DEVELOPMENT** shouldn't be used when running as a docker service. 
-
-⚠️ The [**website/Dockerfile**](website/Dockerfile) is configured for running the website in **production** mode. This means that it will take **BASE_URL_PRODUCTION** as **baseURL**. For changing this, please edit the [**website/Dockerfile**](website/Dockerfile) line: `RUN npm run build:production` ⚠️
+⚠️ The [**website/Dockerfile**](website/Dockerfile) is configured for running the website in **production** mode. This means that it will take **WEBSITE_BASE_URL_DEVELOPMENT** as **baseURL**. For changing this, please edit the [**website/Dockerfile**](website/Dockerfile) line: `RUN npm run build:production` ⚠️
 
 ## Build services
 
@@ -274,7 +287,12 @@ docker stack deploy -c docker-compose.yml my_stack
 Check services:
 
 ```sh
-docker stack services my_stack
+$docker stack services my_stack
+ID             NAME               MODE         REPLICAS   IMAGE                  PORTS
+<ID>           my_stack_apache    replicated   1/1        apache_image:latest    *:80->80/tcp, *:443->443/tcp
+<ID>           my_stack_loader    replicated   0/0        loader_image:latest    
+<ID>           my_stack_mongodb   replicated   1/1        mongo:6                *:27017->27017/tcp
+<ID>           my_stack_website   replicated   2/2        website_image:latest   *:8080->3001/tcp
 ```
 
 Check nodes:
@@ -438,6 +456,10 @@ Additionally, users are able to access the database as a **root/admin** user, as
     mongosh --username <ROOT_USER> --password <ROOT_PASSWORD>
 
 Take into account that acessing mongoDB as **root/admin** user is **not recommended** as with this user there are **no restrictions** once inside the database. We strongly recommend to use the **users** defined in the [**mongo-init.js**](./mongo-init.js) file for accessing the database.
+
+### Apache logs
+
+    docker exec -it <apache_container_ID> tail /var/log/apache2/error.log
 
 ### Check containers
 

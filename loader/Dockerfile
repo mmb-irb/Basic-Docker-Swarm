@@ -13,8 +13,21 @@ WORKDIR /app
 # Clone loader repo
 RUN git clone https://mmb.irbbarcelona.org/gitlab/gbayarri/loader-base.git
 
-# Copy the .env file into the Docker image
-COPY .env /app/loader-base
+# Define environment variables
+ARG DB_HOST
+ARG DB_PORT
+ARG DB_DATABASE
+ARG DB_AUTHSOURCE
+ARG LOADER_DB_LOGIN
+ARG LOADER_DB_PASSWORD
+
+# Create .env file with environment variables
+RUN echo "DB_HOST=${DB_HOST}" > /app/loader-base/.env && \
+    echo "DB_PORT=${DB_PORT}" >> /app/loader-base/.env && \
+    echo "DB_DATABASE=${DB_DATABASE}" >> /app/loader-base/.env && \
+    echo "DB_AUTHSOURCE=${DB_AUTHSOURCE}" >> /app/loader-base/.env && \
+    echo "DB_LOGIN=${LOADER_DB_LOGIN}" >> /app/loader-base/.env && \
+    echo "DB_PASSWORD=${LOADER_DB_PASSWORD}" >> /app/loader-base/.env
 
 # Change working directory to /app/loader-base
 WORKDIR /app/loader-base
