@@ -12,6 +12,7 @@ ARG DB_HOST
 ARG DB_PORT
 ARG DB_DATABASE
 ARG DB_AUTHSOURCE
+ARG WEBSITE_INNER_PORT
 ARG WEBSITE_DB_LOGIN
 ARG WEBSITE_DB_PASSWORD
 ARG WEBSITE_BASE_URL_DEVELOPMENT
@@ -63,7 +64,7 @@ COPY --from=build /app/nuxt-skeleton/.output /app/.output
 COPY ecosystem.config.cjs .
 
 # Expose the port the app runs on
-EXPOSE 3001
+EXPOSE ${WEBSITE_INNER_PORT}
 
 # Serve the app
 CMD ["pm2-runtime", "start", "ecosystem.config.cjs", "--name", "nuxt-skeleton"]

@@ -55,6 +55,8 @@ services:
     image: apache_image   # name of apache image
     build:
       context: ./apache   # folder to search Dockerfile for this image
+      args:
+        WEBSITE_INNER_PORT: ${WEBSITE_INNER_PORT} 
     ports:
       - "${APACHE_HTTP_PORT}:80"
       - "${APACHE_HTTPS_PORT}:443"
@@ -104,6 +106,7 @@ services:
         DB_PORT: ${DB_PORT}
         DB_DATABASE: ${DB_DATABASE}
         DB_AUTHSOURCE: ${DB_AUTHSOURCE}
+        WEBSITE_INNER_PORT: ${WEBSITE_INNER_PORT}
         WEBSITE_DB_LOGIN: ${WEBSITE_DB_LOGIN}
         WEBSITE_DB_PASSWORD: ${WEBSITE_DB_PASSWORD}
         WEBSITE_BASE_URL_DEVELOPMENT: ${WEBSITE_BASE_URL_DEVELOPMENT}
@@ -113,7 +116,7 @@ services:
     depends_on:
       - mongodb
     ports:
-      - "${WEBSITE_PORT}:3001"   # port mapping, be aware that the second port is the same exposed in the website/Dockerfile
+      - "${WEBSITE_PORT}:${WEBSITE_INNER_PORT}"   # port mapping, be aware that the second port is the same exposed in the website/Dockerfile
     networks:
       - my_network
       - webnet
@@ -177,7 +180,7 @@ All the variables are defined in a `.env` file. See following section.
 
 ⚠️ No sensible default value is provided for any of these fields, they **need to be defined** ⚠️
 
-An `.env` file must be created in the **root** folder. The file `.env.git` can be taken as an example. The file must contain the following environment variables:
+An `.env` file must be created in the **root** folder. The file [`.env.git`](.env.git) can be taken as an example. The file must contain the following environment variables:
 
 | key              | value   | description                                     |
 | ---------------- | ------- | ----------------------------------------------- |
@@ -200,12 +203,13 @@ An `.env` file must be created in the **root** folder. The file `.env.git` can b
 | LOADER_DB_LOGIN      | string  | db user for loader                         |
 | LOADER_DB_PASSWORD      | string  | db password for loader                       |
 | &nbsp;
-| WEBSITE_PORT         | number  | website outer port protocol                                        |
+| WEBSITE_PORT         | number  | website outer port                                        |
 | WEBSITE_REPLICAS         | number  | website number of replicas to deploy                                        |
 | WEBSITE_CPU_LIMIT    | string  | website limit number of CPUs                               |
 | WEBSITE_MEMORY_LIMIT    | string  | website limit memory                             |
 | WEBSITE_CPU_RESERVATION    | string  | website reserved number of CPUs                               |
 | WEBSITE_MEMORY_RESERVATION    | string  | website reserved memory                               |
+| WEBSITE_INNER_PORT         | number  | website inner port                                        |
 | WEBSITE_DB_LOGIN    | string  | db user for website REST API                               |
 | WEBSITE_DB_PASSWORD    | string  | db password for website REST API                               |
 | WEBSITE_BASE_URL_DEVELOPMENT    | string  | baseURL for development                               |
@@ -214,7 +218,7 @@ An `.env` file must be created in the **root** folder. The file `.env.git` can b
 | WEBSITE_CUSTOM    | string  | whether or not custom images and styles provided                               |
 | &nbsp;
 | DB_VOLUME_PATH         | string  | path where the DB will look for files                                        |
-| DB_PORT         | number  | DB outer port protocol                                        |
+| DB_PORT         | number  | DB outer port                                        |
 | DB_REPLICAS         | number  | DB number of replicas to deploy                                        |
 | DB_CPU_LIMIT      | string  | DB limit number of CPUs                                    |
 | DB_MEMORY_LIMIT          | string | DB limit memory                           |
@@ -235,7 +239,7 @@ LOADER_CPU_LIMIT='4.00'  # cpus in float format
 LOADER_MEMORY_LIMIT='2G'  # memory indicating unit (G, M)
 ```
 
-The **DB_HOST** must be the name of the **stack service** followed by **underscore** and the **name of the service** as defined in the [**docker-compose.yml**](#docker-compose.yml) file.
+The **DB_HOST** must be the name of the **stack service** followed by **underscore** and the **name of the service** as defined in the [**docker-compose.yml**](#docker-compose.yml) file (ie _my_stack_mongodb_).
 
 The **DB_DATABASE** and **DB_AUTHSOURCE** must be the same used in the **mongo-init.js** file.
 
@@ -247,7 +251,7 @@ If `WEBSITE_CUSTOM=true`, make sure to provide a **/config folder** in the [webs
 
 The **WEBSITE_BASE_URL_DEVELOPMENT** shouldn't be used when running as a docker service. 
 
-⚠️ The [**website/Dockerfile**](website/Dockerfile) is configured for running the website in **production** mode. This means that it will take **WEBSITE_BASE_URL_DEVELOPMENT** as **baseURL**. For changing this, please edit the [**website/Dockerfile**](website/Dockerfile) line: `RUN npm run build:production` ⚠️
+⚠️ The [**website/Dockerfile**](website/Dockerfile) is configured for running the website in **production** mode. This means that it will take **WEBSITE_BASE_URL_PRODUCTION** as **baseURL**. For changing this, please edit the [**website/Dockerfile**](website/Dockerfile) line: `RUN npm run build:production` ⚠️
 
 ## Build services
 
@@ -287,7 +291,7 @@ docker stack deploy -c docker-compose.yml my_stack
 Check services:
 
 ```sh
-$docker stack services my_stack
+$ docker stack services my_stack
 ID             NAME               MODE         REPLICAS   IMAGE                  PORTS
 <ID>           my_stack_apache    replicated   1/1        apache_image:latest    *:80->80/tcp, *:443->443/tcp
 <ID>           my_stack_loader    replicated   0/0        loader_image:latest    
@@ -459,7 +463,7 @@ Take into account that acessing mongoDB as **root/admin** user is **not recommen
 
 ### Apache logs
 
-    docker exec -it <apache_container_ID> tail /var/log/apache2/error.log
+    docker logs <apache_container_ID>
 
 ### Check containers
 

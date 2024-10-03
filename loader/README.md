@@ -4,30 +4,56 @@ Dockerfile for building a container with a basic loader inside:
 
 https://mmb.irbbarcelona.org/gitlab/gbayarri/loader-base.git
 
-## .env file
+## Dockerfile
 
-⚠️ No sensible default value is provided for any of these fields, they **need to be defined** ⚠️
+```Dockerfile
+# Use Alpine Linux as base image
+FROM alpine:latest
 
-An `.env` file must be created in the loader and website folders. The file `.env.git` can be taken as an example. The file must contain the following environment variables (the DB user needs to have writing rights):
+# Install necessary packages
+RUN apk --no-cache add nodejs npm git
 
-| key              | value   | description                                     |
-| ---------------- | ------- | ----------------------------------------------- |
-| DB_LOGIN         | string  | db user                                         |
-| DB_PASSWORD      | string  | db password                                     |
-| DB_HOST          | `<url>` | url of the db server                            |
-| DB_PORT          | number  | port of the db server                           |
-| DB_DATABASE      | string  | name of the dbcollection                        |
-| DB_AUTHSOURCE    | string  | authentication db                               |
+# Verify installation
+RUN node --version && npm --version && git --version
 
-Take into account that, by default, the **mongodb docker** is configured without authentication. So, if following the instructions of this README, leave **DB_LOGIN** and **DB_STRING** empty. Example for this proof of concept:
+# Define working dir
+WORKDIR /app
 
-```
-DB_LOGIN=
-DB_PASSWORD=
-DB_HOST=my_mongo_container
-DB_PORT=27017
-DB_DATABASE=<DB NAME>
-DB_AUTHSOURCE=<DB NAME>
-```
+# Clone loader repo
+RUN git clone https://mmb.irbbarcelona.org/gitlab/gbayarri/loader-base.git
 
-The **DB_HOST** must be the same name as the **mongodb container_name** in the **docker-compose.yml**.
+# Define environment variables
+ARG DB_HOST
+ARG DB_PORT
+ARG DB_DATABASE
+ARG DB_AUTHSOURCE
+ARG LOADER_DB_LOGIN
+ARG LOADER_DB_PASSWORD
+
+# Create .env file with environment variables
+RUN echo "DB_HOST=${DB_HOST}" > /app/loader-base/.env && \
+    echo "DB_PORT=${DB_PORT}" >> /app/loader-base/.env && \
+    echo "DB_DATABASE=${DB_DATABASE}" >> /app/loader-base/.env && \
+    echo "DB_AUTHSOURCE=${DB_AUTHSOURCE}" >> /app/loader-base/.env && \
+    echo "DB_LOGIN=${LOADER_DB_LOGIN}" >> /app/loader-base/.env && \
+    echo "DB_PASSWORD=${LOADER_DB_PASSWORD}" >> /app/loader-base/.env
+
+# Change working directory to /app/loader-base
+WORKDIR /app/loader-base
+
+# Install packages
+RUN npm install
+
+# Update mongodb version to the version of the mongo docker image
+# RUN npm i mongodb@6
+# Change working directory to /app
+WORKDIR /app
+
+# Create the entrypoint script
+RUN echo '#!/bin/sh' > entrypoint.sh && \
+    echo 'node /app/loader-base/index.js "$@"' >> entrypoint.sh && \
+    chmod +x entrypoint.sh
+
+# Set the entrypoint script as the entrypoint
+ENTRYPOINT ["/app/entrypoint.sh"]
+```v

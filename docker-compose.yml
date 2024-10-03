@@ -3,6 +3,8 @@ services:
     image: apache_image   # name of apache image
     build:
       context: ./apache   # folder to search Dockerfile for this image
+      args:
+        WEBSITE_INNER_PORT: ${WEBSITE_INNER_PORT} 
     ports:
       - "${APACHE_HTTP_PORT}:80"
       - "${APACHE_HTTPS_PORT}:443"
@@ -52,6 +54,7 @@ services:
         DB_PORT: ${DB_PORT}
         DB_DATABASE: ${DB_DATABASE}
         DB_AUTHSOURCE: ${DB_AUTHSOURCE}
+        WEBSITE_INNER_PORT: ${WEBSITE_INNER_PORT}
         WEBSITE_DB_LOGIN: ${WEBSITE_DB_LOGIN}
         WEBSITE_DB_PASSWORD: ${WEBSITE_DB_PASSWORD}
         WEBSITE_BASE_URL_DEVELOPMENT: ${WEBSITE_BASE_URL_DEVELOPMENT}
@@ -61,7 +64,7 @@ services:
     depends_on:
       - mongodb
     ports:
-      - "${WEBSITE_PORT}:3001"   # port mapping, be aware that the second port is the same exposed in the website/Dockerfile
+      - "${WEBSITE_PORT}:${WEBSITE_INNER_PORT}"   # port mapping, be aware that the second port is the same exposed in the website/Dockerfile
     networks:
       - my_network
       - webnet

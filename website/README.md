@@ -4,72 +4,79 @@ Dockerfile for building a container with a basic website inside:
 
 https://mmb.irbbarcelona.org/gitlab/gbayarri/nuxt-skeleton.git
 
-This website has been impleneted in Nuxt 3 and it has both the front-end and the back-end in the same repo.
+This website has been implemented in Nuxt 3 and it has both the front-end and the back-end in the same repo.
 
 ## Dockerfile
 
-Take into account that the port exposed in this proof of concept is **3001**. For changing the port, please modify it in the Dockerfile file:
-
 ```Dockerfile
-EXPOSE 3001
+# Stage 1: Build the Nuxt app
+FROM node:18.19.0 AS build
+
+# Set working directory
+WORKDIR /app
+
+# Clone nuxt-skeleton repo
+RUN git clone https://mmb.irbbarcelona.org/gitlab/gbayarri/nuxt-skeleton.git
+
+# Define environment variables
+ARG DB_HOST
+ARG DB_PORT
+ARG DB_DATABASE
+ARG DB_AUTHSOURCE
+ARG WEBSITE_INNER_PORT
+ARG WEBSITE_DB_LOGIN
+ARG WEBSITE_DB_PASSWORD
+ARG WEBSITE_BASE_URL_DEVELOPMENT
+ARG WEBSITE_BASE_URL_STAGING
+ARG WEBSITE_BASE_URL_PRODUCTION
+ARG WEBSITE_CUSTOM
+
+# Create .env file with environment variables
+RUN echo "DB_HOST=${DB_HOST}" > /app/nuxt-skeleton/.env && \
+    echo "DB_PORT=${DB_PORT}" >> /app/nuxt-skeleton/.env && \
+    echo "DB_DATABASE=${DB_DATABASE}" >> /app/nuxt-skeleton/.env && \
+    echo "DB_AUTHSOURCE=${DB_AUTHSOURCE}" >> /app/nuxt-skeleton/.env && \
+    echo "DB_LOGIN=${WEBSITE_DB_LOGIN}" >> /app/nuxt-skeleton/.env && \
+    echo "DB_PASSWORD=${WEBSITE_DB_PASSWORD}" >> /app/nuxt-skeleton/.env && \
+    echo "BASE_URL_DEVELOPMENT=${WEBSITE_BASE_URL_DEVELOPMENT}" >> /app/nuxt-skeleton/.env && \
+    echo "BASE_URL_STAGING=${WEBSITE_BASE_URL_STAGING}" >> /app/nuxt-skeleton/.env && \
+    echo "BASE_URL_PRODUCTION=${WEBSITE_BASE_URL_PRODUCTION}" >> /app/nuxt-skeleton/.env && \
+    echo "CUSTOM=${WEBSITE_CUSTOM}" >> /app/nuxt-skeleton/.env
+
+# Copy the config folder into the Docker image (if exists)
+RUN mkdir -p /app/nuxt-skeleton/config
+COPY conf*g /app/nuxt-skeleton/config
+
+# Change working directory to /app/nuxt-skeleton
+WORKDIR /app/nuxt-skeleton
+
+# Install dependencies
+RUN npm install
+
+# Build website in production
+RUN npm run build:production
+
+# Stage 2: Serve the Nuxt app with pm2
+FROM alpine:latest
+
+# Install necessary packages
+RUN apk --no-cache add nodejs npm 
+
+# Install pm2
+RUN npm install pm2 -g
+
+# Set working directory
+WORKDIR /app
+
+# Copy the built Nuxt app from the previous stage
+COPY --from=build /app/nuxt-skeleton/.output /app/.output
+
+# Copy the pm2 configuration file
+COPY ecosystem.config.cjs .
+
+# Expose the port the app runs on
+EXPOSE ${WEBSITE_INNER_PORT}
+
+# Serve the app
+CMD ["pm2-runtime", "start", "ecosystem.config.cjs", "--name", "nuxt-skeleton"]
 ```
-
-After changing this port, it must be changed as well in the **docker-compose.yml** file: 
-
-```yaml
-website:
-  image: website_image
-  container_name: my_website
-  build:
-    context: ./website
-  depends_on:
-    - mongodb
-  ports:
-    - "8080:3001"
-  networks:
-    - my_network
-```
-
-Or, if running the website container directly via docker, in the command line:
-
-```
-docker run --name my_web_container --network my_network -d -p 8080:3001
-```
-
-## .env file
-
-⚠️ No sensible default value is provided for any of these fields, they **need to be defined** ⚠️
-
-An `.env` file must be created in the loader and website folders. The file `.env.git` can be taken as an example. The file must contain the following environment variables (the DB user needs to have writing rights):
-
-| key                       | value                                    | description                     |
-| ------------------------- | ---------------------------------------- | ------------------------------- |
-| DB_LOGIN                  | string                                   | db user                         |
-| DB_PASSWORD               | string                                   | db password                     |
-| DB_HOST                   | `<url>`                                  | url of the db server            |
-| DB_PORT                   | number                                   | port of the db server           |
-| DB_DATABASE               | string                                   | name of the dbcollection        |
-| DB_AUTHSOURCE             | string                                   | the collection the user will attempt to authenticate to    |
-| BASE_URL_DEVELOPMENT      | string                                   | baseURL for development         |
-| BASE_URL_STAGING          | string                                   | baseURL for staging             |
-| BASE_URL_PRODUCTION       | string                                   | baseURL for production          |
-| CUSTOM                    | boolean                                  | whether or not custom images and styles provided          |
-
-Take into account that, by default, the **mongodb docker** is configured without authentication. So, if following the instructions of this README, leave **DB_LOGIN** and **DB_STRING** empty. Example for this proof of concept:
-
-```
-DB_LOGIN=
-DB_PASSWORD=
-DB_HOST=my_mongo_container
-DB_PORT=27017
-DB_DATABASE=<DB NAME>
-DB_AUTHSOURCE=<DB NAME>
-
-BASE_URL_DEVELOPMENT=/nuxt-skeleton/
-BASE_URL_STAGING=/nuxt-skeleton/
-BASE_URL_PRODUCTION=/nuxt-skeleton/
-```
-
-The **DB_HOST** must be the same name as the **mongodb container_name** in the **docker-compose.yml**.
-
-If `CUSTOM=true`, make sure to provide a **/config folder** in this same folder with a **custom.css**, **favicon.ico** and **logo.png** files.

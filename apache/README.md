@@ -1,3 +1,12 @@
+# Apache
+
+The Apache HTTP Server, colloquially called Apache, is a **Web server** application notable for playing a key role in the initial growth of the World Wide Web:
+
+https://hub.docker.com/_/httpd
+
+## Dockerfile
+
+```Dockerfile
 FROM httpd:2.4
 
 # Copy the custom Apache configuration file
@@ -17,3 +26,4 @@ RUN echo "IncludeOptional /usr/local/apache2/conf/conf.d/custom.conf" >> /usr/lo
 # COPY private.key /etc/ssl/private/private.key
 
 EXPOSE 80 443
+```
