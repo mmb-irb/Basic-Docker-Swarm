@@ -3,8 +3,10 @@ FROM httpd:2.4
 # Copy the custom Apache configuration file
 COPY apache-config.conf /usr/local/apache2/conf/conf.d/custom.conf
 
-# Define the build argument
+# Define the build arguments
 ARG WEBSITE_INNER_PORT
+ARG APACHE_HTTP_INNER_PORT
+ARG APACHE_HTTPS_INNER_PORT
 
 # Perform search and replace using sed
 RUN sed -i "s/WEBSITE_INNER_PORT/${WEBSITE_INNER_PORT}/g" /usr/local/apache2/conf/conf.d/custom.conf
@@ -16,4 +18,4 @@ RUN echo "IncludeOptional /usr/local/apache2/conf/conf.d/custom.conf" >> /usr/lo
 # COPY public.pem /etc/ssl/certs/public.pem
 # COPY private.key /etc/ssl/private/private.key
 
-EXPOSE 80 443
+EXPOSE ${APACHE_HTTP_INNER_PORT} ${APACHE_HTTPS_INNER_PORT}

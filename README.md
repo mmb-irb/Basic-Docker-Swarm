@@ -58,8 +58,8 @@ services:
       args:
         WEBSITE_INNER_PORT: ${WEBSITE_INNER_PORT} 
     ports:
-      - "${APACHE_HTTP_PORT}:80"
-      - "${APACHE_HTTPS_PORT}:443"
+      - "${APACHE_HTTP_OUTER_PORT}:${APACHE_HTTP_INNER_PORT}"
+      - "${APACHE_HTTPS_OUTER_PORT}:${APACHE_HTTPS_INNER_PORT}"
     networks:
       - webnet
     deploy:
@@ -71,6 +71,8 @@ services:
         reservations:
           cpus: ${APACHE_CPU_RESERVATION}   # Specify the reserved number of CPUs
           memory: ${APACHE_MEMORY_RESERVATION}   # Specify the reserved memory
+      restart_policy:
+        condition: any   # Restart always
 
   loader:
     image: loader_image   # name of loader image
@@ -78,7 +80,7 @@ services:
       context: ./loader   # folder to search Dockerfile for this image
       args:
         DB_HOST: ${DB_HOST} 
-        DB_PORT: ${DB_PORT}
+        DB_PORT: ${DB_OUTER_PORT}
         DB_DATABASE: ${DB_DATABASE} 
         DB_AUTHSOURCE: ${DB_AUTHSOURCE} 
         LOADER_DB_LOGIN: ${LOADER_DB_LOGIN}
@@ -86,7 +88,7 @@ services:
     volumes:
       - loader_volume:/data   # path from where the data will be taken
     networks:
-      - my_network
+      - dbnet
     deploy:
       replicas: ${LOADER_REPLICAS}  # Ensure this service is not deployed by default as it is a one-time task
       resources:
@@ -103,7 +105,7 @@ services:
       context: ./website  # folder to search Dockerfile for this image
       args:
         DB_HOST: ${DB_HOST}
-        DB_PORT: ${DB_PORT}
+        DB_PORT: ${DB_OUTER_PORT}
         DB_DATABASE: ${DB_DATABASE}
         DB_AUTHSOURCE: ${DB_AUTHSOURCE}
         WEBSITE_INNER_PORT: ${WEBSITE_INNER_PORT}
@@ -118,7 +120,7 @@ services:
     ports:
       - "${WEBSITE_PORT}:${WEBSITE_INNER_PORT}"   # port mapping, be aware that the second port is the same exposed in the website/Dockerfile
     networks:
-      - my_network
+      - dbnet
       - webnet
     deploy:
       replicas: ${WEBSITE_REPLICAS}   # Specify the number of replicas for Docker Swarm
@@ -140,12 +142,12 @@ services:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
     ports:
-      - "${DB_PORT}:27017"
+      - "${DB_OUTER_PORT}:${DB_INNER_PORT}"
     volumes:
       - ${DB_VOLUME_PATH}:/data/db   # path where the database will be stored (outside the container, in the host machine)
       - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro   # path to the initialization script
     networks:
-      - my_network
+      - dbnet
     deploy:
       replicas: ${DB_REPLICAS}   # Specify the number of replicas for Docker Swarm
       resources:
@@ -167,7 +169,7 @@ volumes:
       device: ${LOADER_VOLUME_PATH}   # bind the volume to LOADER_VOLUME_PATH on the host
 
 networks:
-  my_network: 
+  dbnet: 
     external: true   # Use an external network
   webnet:
     name: webnet   # Name of the network
@@ -186,8 +188,10 @@ An `.env` file must be created in the **root** folder. The file [`.env.git`](.en
 | ---------------- | ------- | ----------------------------------------------- |
 | DOCKER_DEFAULT_PLATFORM         | string  | default platform (architecture and operating system), ie linux/amd64                               |
 | &nbsp;
-| APACHE_HTTP_PORT         | number  | apache outer port for http protocol                                        |
-| APACHE_HTTPS_PORT         | number  | apache outer port for https protocol                                        |
+| APACHE_HTTP_OUTER_PORT         | number  | apache outer port for http protocol                                        |
+| APACHE_HTTPS_OUTER_PORT         | number  | apache outer port for https protocol                                        |
+| APACHE_HTTP_INNER_PORT         | number  | apache inner port for http protocol                                        |
+| APACHE_HTTPS_INNER_PORT         | number  | apache inner port for https protocol                                        |
 | APACHE_REPLICAS         | number  | apache number of replicas to deploy                                        |
 | APACHE_CPU_LIMIT         | string  | apache limit number of CPUs                                        |
 | APACHE_MEMORY_LIMIT         | string  | apache limit memory                                        |
@@ -218,7 +222,8 @@ An `.env` file must be created in the **root** folder. The file [`.env.git`](.en
 | WEBSITE_CUSTOM    | string  | whether or not custom images and styles provided                               |
 | &nbsp;
 | DB_VOLUME_PATH         | string  | path where the DB will look for files                                        |
-| DB_PORT         | number  | DB outer port                                        |
+| DB_OUTER_PORT         | number  | DB outer port                                        |
+| DB_INNER_PORT         | number  | DB inner port                                        |
 | DB_REPLICAS         | number  | DB number of replicas to deploy                                        |
 | DB_CPU_LIMIT      | string  | DB limit number of CPUs                                    |
 | DB_MEMORY_LIMIT          | string | DB limit memory                           |
@@ -267,10 +272,10 @@ docker swarm init
 docker swarm init --advertise-addr <IP_ADDRESS>
 ```
 
-In order to execute the **long-term** tasks in **Docker Swarm** and the **one-off tasks**, such as the **loader** in this proof of concept, in **Docker Compose**, the **network** is declared as **external** in the **docker-compose.yml** file, so it must be created before the `docker-compose build` and the `docker stak deploy`:
+In order to execute the **long-term** tasks in **Docker Swarm** and the **one-off tasks**, such as the **loader** in this proof of concept, in **Docker Compose**, the **dbnet network** is declared as **external** in the **docker-compose.yml** file, so it must be created before the `docker-compose build` and the `docker stak deploy`:
 
 ```sh
-docker network create --driver overlay --attachable my_network
+docker network create --driver overlay --attachable dbnet
 ```
 
 > NOTE: **From July 2024 onwards**, the instruction for Docker Compose in **mac** is without hyphen, so from now on, `docker-compose build` is `docker compose build` when executing in **macOS**.
@@ -369,10 +374,8 @@ docker-compose run --rm loader remove -d <ID>
 Open a browser and type:
 
 ```
-http://localhost:8080
+http://localhost
 ```
-
-Or modify the port by the one defined as **ports** in the **docker-compose.yml** file.
 
 ## Stop services
 
@@ -471,16 +474,17 @@ Check that the **mongo** and the replicas of **web containers** are up & running
 
 ```sh
 $ docker ps -a
-CONTAINER ID   IMAGE                  COMMAND                  CREATED          STATUS                      PORTS       NAMES
-<ID>           mongo:6                "docker-entrypoint.s…"   21 minutes ago   Up 21 minutes               27017/tcp   my_stack_mongodb.1.<ID>
-<ID>           website_image:latest   "pm2-runtime start e…"   21 minutes ago   Up 21 minutes               3001/tcp    my_stack_website.1.<ID>
-<ID>           website_image:latest   "pm2-runtime start e…"   21 minutes ago   Up 21 minutes               3001/tcp    my_stack_website.2.<ID>
+CONTAINER ID   IMAGE                  COMMAND                  CREATED         STATUS         PORTS             NAMES
+<ID>           apache_image:latest    "httpd-foreground"       4 minutes ago   Up 4 minutes   80/tcp, 443/tcp   my_stack_apache.1.<ID>
+<ID>           mongo:6                "docker-entrypoint.s…"   4 minutes ago   Up 4 minutes   27017/tcp         my_stack_mongodb.1.<ID>
+<ID>           website_image:latest   "pm2-runtime start e…"   4 minutes ago   Up 4 minutes                     my_stack_website.1.<ID>
+<ID>           website_image:latest   "pm2-runtime start e…"   4 minutes ago   Up 4 minutes                     my_stack_website.2.<ID>
 ```
 
 ### Inspect docker network 
 
 ```sh
-docker network inspect my_network
+docker network inspect dbnet
 ```
 
 should show something like:
@@ -488,7 +492,7 @@ should show something like:
 ```json
 [
     {
-        "Name": "my_network",
+        "Name": "dbnet",
         "Id": "<ID>",
         "Created": "<DATE>",
         "Scope": "swarm",
@@ -533,8 +537,8 @@ should show something like:
                 "IPv4Address": "<IP>",
                 "IPv6Address": ""
             },
-            "lb-my_network": {
-                "Name": "my_network-endpoint",
+            "lb-dbnet": {
+                "Name": "dbnet-endpoint",
                 "EndpointID": "<ID>",
                 "MacAddress": "<MAC>",
                 "IPv4Address": "<IP>",
@@ -544,9 +548,7 @@ should show something like:
         "Options": {
             "com.docker.network.driver.overlay.vxlanid_list": "<ID>"
         },
-        "Labels": {
-            "com.docker.stack.namespace": "my_stack"
-        },
+        "Labels": {},
         "Peers": [
             {
                 "Name": "<ID>",
@@ -577,10 +579,11 @@ Check resources consumption for all running containers:
 
 ```sh
 $ docker stats
-CONTAINER ID   NAME                                           CPU %     MEM USAGE / LIMIT   MEM %     NET I/O           BLOCK I/O     PIDS
-<ID>           my_stack_mongodb.1.<ID>                        0.44%     105.2MiB / 2GiB     1.28%     43.1MB / 247MB    0B / 499MB    50
-<ID>           my_stack_website.1.<ID>                        0.26%     73.03MiB / 2GiB     0.71%     59.3MB / 29.9MB   0B / 24.6kB   22
-<ID>           my_stack_website.2.<ID>                        0.33%     70.78MiB / 2GiB     0.69%     60.4MB / 29.5MB   0B / 24.6kB   22
+CONTAINER ID   NAME                                           CPU %     MEM USAGE / LIMIT   MEM %     NET I/O           BLOCK I/O         PIDS
+<ID>           my_stack_apache.1.<ID>                         0.01%     13.35MiB / 1GiB     1.30%     13.1kB / 12.7kB   6.73MB / 4.1kB    109
+<ID>           my_stack_mongodb.1.<ID>                        0.44%     105.2MiB / 2GiB     1.28%     43.1MB / 247MB    0B / 499MB        50
+<ID>           my_stack_website.1.<ID>                        0.26%     73.03MiB / 2GiB     0.71%     59.3MB / 29.9MB   0B / 24.6kB       22
+<ID>           my_stack_website.2.<ID>                        0.33%     70.78MiB / 2GiB     0.69%     60.4MB / 29.5MB   0B / 24.6kB       22
 ```
 
 ### Docker logs

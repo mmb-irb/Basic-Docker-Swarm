@@ -5,9 +5,11 @@ services:
       context: ./apache   # folder to search Dockerfile for this image
       args:
         WEBSITE_INNER_PORT: ${WEBSITE_INNER_PORT} 
+        APACHE_HTTP_INNER_PORT: ${APACHE_HTTP_INNER_PORT}
+        APACHE_HTTPS_INNER_PORT: ${APACHE_HTTPS_INNER_PORT}
     ports:
-      - "${APACHE_HTTP_PORT}:80"
-      - "${APACHE_HTTPS_PORT}:443"
+      - "${APACHE_HTTP_OUTER_PORT}:${APACHE_HTTP_INNER_PORT}"
+      - "${APACHE_HTTPS_OUTER_PORT}:${APACHE_HTTPS_INNER_PORT}"
     networks:
       - webnet
     deploy:
@@ -19,6 +21,8 @@ services:
         reservations:
           cpus: ${APACHE_CPU_RESERVATION}   # Specify the reserved number of CPUs
           memory: ${APACHE_MEMORY_RESERVATION}   # Specify the reserved memory
+      restart_policy:
+        condition: any   # Restart always
 
   loader:
     image: loader_image   # name of loader image
@@ -26,7 +30,7 @@ services:
       context: ./loader   # folder to search Dockerfile for this image
       args:
         DB_HOST: ${DB_HOST} 
-        DB_PORT: ${DB_PORT}
+        DB_PORT: ${DB_OUTER_PORT}
         DB_DATABASE: ${DB_DATABASE} 
         DB_AUTHSOURCE: ${DB_AUTHSOURCE} 
         LOADER_DB_LOGIN: ${LOADER_DB_LOGIN}
@@ -34,7 +38,7 @@ services:
     volumes:
       - loader_volume:/data   # path from where the data will be taken
     networks:
-      - my_network
+      - dbnet
     deploy:
       replicas: ${LOADER_REPLICAS}  # Ensure this service is not deployed by default as it is a one-time task
       resources:
@@ -51,7 +55,7 @@ services:
       context: ./website  # folder to search Dockerfile for this image
       args:
         DB_HOST: ${DB_HOST}
-        DB_PORT: ${DB_PORT}
+        DB_PORT: ${DB_OUTER_PORT}
         DB_DATABASE: ${DB_DATABASE}
         DB_AUTHSOURCE: ${DB_AUTHSOURCE}
         WEBSITE_INNER_PORT: ${WEBSITE_INNER_PORT}
@@ -66,7 +70,7 @@ services:
     ports:
       - "${WEBSITE_PORT}:${WEBSITE_INNER_PORT}"   # port mapping, be aware that the second port is the same exposed in the website/Dockerfile
     networks:
-      - my_network
+      - dbnet
       - webnet
     deploy:
       replicas: ${WEBSITE_REPLICAS}   # Specify the number of replicas for Docker Swarm
@@ -88,12 +92,12 @@ services:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
     ports:
-      - "${DB_PORT}:27017"
+      - "${DB_OUTER_PORT}:${DB_INNER_PORT}"
     volumes:
       - ${DB_VOLUME_PATH}:/data/db   # path where the database will be stored (outside the container, in the host machine)
       - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro   # path to the initialization script
     networks:
-      - my_network
+      - dbnet
     deploy:
       replicas: ${DB_REPLICAS}   # Specify the number of replicas for Docker Swarm
       resources:
@@ -115,7 +119,7 @@ volumes:
       device: ${LOADER_VOLUME_PATH}   # bind the volume to LOADER_VOLUME_PATH on the host
 
 networks:
-  my_network: 
+  dbnet: 
     external: true   # Use an external network
   webnet:
     name: webnet   # Name of the network

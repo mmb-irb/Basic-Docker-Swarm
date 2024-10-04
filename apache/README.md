@@ -6,6 +6,8 @@ https://hub.docker.com/_/httpd
 
 ## Dockerfile
 
+**Uncomment** commented lines for configuring **https**. Be aware of having the **public** and **private** files in the **same folder** where the Dockerfile is:
+
 ```Dockerfile
 FROM httpd:2.4
 
@@ -26,4 +28,32 @@ RUN echo "IncludeOptional /usr/local/apache2/conf/conf.d/custom.conf" >> /usr/lo
 # COPY private.key /etc/ssl/private/private.key
 
 EXPOSE 80 443
+```
+
+## Apache conf file
+
+**Uncomment** commented lines for configuring **https**:
+
+```apache
+LoadModule proxy_module /usr/local/apache2/modules/mod_proxy.so
+LoadModule proxy_http_module /usr/local/apache2/modules/mod_proxy_http.so
+# LoadModule ssl_module /usr/local/apache2/modules/mod_ssl.so
+
+<VirtualHost *:80>
+	<Location / >
+   		ProxyPass http://website:WEBSITE_INNER_PORT/
+   		ProxyPassReverse http://website:WEBSITE_INNER_PORT/
+	</Location>
+</VirtualHost>
+
+#<VirtualHost *:443>
+#    SSLEngine on
+#    SSLCertificateFile /etc/ssl/certs/public.pem
+#    SSLCertificateKeyFile /etc/ssl/private/private.key
+#    SSLCertificateChainFile /etc/ssl/certs/public.pem
+#    <Location />
+#        ProxyPass http://website:WEBSITE_INNER_PORT/
+#        ProxyPassReverse http://website:WEBSITE_INNER_PORT/
+#    </Location>
+#</VirtualHost>
 ```
