@@ -244,7 +244,7 @@ LOADER_CPU_LIMIT='4.00'  # cpus in float format
 LOADER_MEMORY_LIMIT='2G'  # memory indicating unit (G, M)
 ```
 
-The **DB_HOST** must be the name of the **stack service** followed by **underscore** and the **name of the service** as defined in the [**docker-compose.yml**](#docker-compose.yml) file (ie _my_stack_mongodb_).
+The **DB_HOST** must be the name of the **stack service** followed by **underscore** and the **name of the service** as defined in the [**docker-compose.yml**](./docker-compose.yml) file (ie _my_stack_mongodb_).
 
 The **DB_DATABASE** and **DB_AUTHSOURCE** must be the same used in the **mongo-init.js** file.
 
@@ -252,7 +252,7 @@ The credentials **LOADER_DB_LOGIN** and **LOADER_DB_PASSWORD** must be the same 
 
 The credentials **WEBSITE_DB_LOGIN** and **WEBSITE_DB_PASSWORD** must be the same defined in the **mongo-init.js** file with the **read** role.
 
-If `WEBSITE_CUSTOM=true`, make sure to provide a **/config folder** in the [website](website) folder with a **custom.css**, **favicon.ico** and **logo.png** files.
+If `WEBSITE_CUSTOM=true`, make sure to provide a **/config folder** in the [**website**](website) folder with a **custom.css**, **favicon.ico** and **logo.png** files.
 
 The **WEBSITE_BASE_URL_DEVELOPMENT** shouldn't be used when running as a docker service. 
 
@@ -323,7 +323,7 @@ docker-compose run --rm loader list
 ```
 **Load** documents to database:
 
-As the database comes empty, it's necessary to load some data for running the website properly. The route for the upload.json must be the same defined as **working_dir** in the **docker-compose.yml** file (ie /data). And the upload.json file must be in the **LOADER_VOLUME_PATH** path defined in the [**root .env**](#root) file.
+As the database comes empty, it's necessary to load some data for running the website properly. The route for the upload.json must be the same defined as **working_dir** in the **docker-compose.yml** file (ie /data). And the upload.json file must be in the **LOADER_VOLUME_PATH** path defined in the [**root .env**](#env-file) file.
 
 ```sh
 docker-compose run --rm loader load /data/upload.json
@@ -458,7 +458,7 @@ Execute some mongo shell instruction:
 
     show collections
 
-Additionally, users are able to access the database as a **root/admin** user, as defined in the [**docker-compose.yml**](./docker-compose-git.yml) file:
+Additionally, users are able to access the database as a **root/admin** user, as defined in the [**docker-compose.yml**](./docker-compose.yml) file:
 
     mongosh --username <ROOT_USER> --password <ROOT_PASSWORD>
 
