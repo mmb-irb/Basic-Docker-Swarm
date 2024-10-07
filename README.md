@@ -254,7 +254,7 @@ The credentials **WEBSITE_DB_LOGIN** and **WEBSITE_DB_PASSWORD** must be the sam
 
 If `WEBSITE_CUSTOM=true`, make sure to provide a **/config folder** in the [**website**](website) folder with a **custom.css**, **favicon.ico** and **logo.png** files.
 
-The **WEBSITE_BASE_URL_DEVELOPMENT** shouldn't be used when running as a docker service. 
+Neither the **WEBSITE_BASE_URL_DEVELOPMENT** nor the **WEBSITE_BASE_URL_STAGING** shouldn't be used when running as a docker service. 
 
 ⚠️ The [**website/Dockerfile**](website/Dockerfile) is configured for running the website in **production** mode. This means that it will take **WEBSITE_BASE_URL_PRODUCTION** as **baseURL**. For changing this, please edit the [**website/Dockerfile**](website/Dockerfile) line: `RUN npm run build:production` ⚠️
 

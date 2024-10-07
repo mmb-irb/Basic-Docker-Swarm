@@ -7,7 +7,7 @@ WORKDIR /app
 # Clone nuxt-skeleton repo
 RUN git clone https://mmb.irbbarcelona.org/gitlab/gbayarri/nuxt-skeleton.git
 
-# Define environment variables
+# Define the build arguments
 ARG DB_HOST
 ARG DB_PORT
 ARG DB_DATABASE

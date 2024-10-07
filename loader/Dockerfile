@@ -13,7 +13,7 @@ WORKDIR /app
 # Clone loader repo
 RUN git clone https://mmb.irbbarcelona.org/gitlab/gbayarri/loader-base.git
 
-# Define environment variables
+# Define the build arguments
 ARG DB_HOST
 ARG DB_PORT
 ARG DB_DATABASE
