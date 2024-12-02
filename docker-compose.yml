@@ -91,11 +91,17 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+      MONGO_PORT: ${DB_OUTER_PORT}
+      MONGO_INITDB_DATABASE: ${DB_DATABASE}
+      LOADER_DB_LOGIN: ${LOADER_DB_LOGIN}
+      LOADER_DB_PASSWORD: ${LOADER_DB_PASSWORD}
+      WEBSITE_SERVER_DB_LOGIN: ${WEBSITE_DB_LOGIN}
+      WEBSITE_SERVER_DB_PASSWORD: ${WEBSITE_DB_PASSWORD}
     ports:
       - "${DB_OUTER_PORT}:${DB_INNER_PORT}"
     volumes:
-      - ${DB_VOLUME_PATH}:/data/db   # path where the database will be stored (outside the container, in the host machine)
-      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro   # path to the initialization script
+      - db_volume:/data/db   # path where the database will be stored (outside the container, in the host machine)
+      - ./mongodb/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro   # path to the initialization script
     networks:
       - dbnet
     deploy:
@@ -117,10 +123,16 @@ volumes:
       type: none
       o: bind
       device: ${LOADER_VOLUME_PATH}   # bind the volume to LOADER_VOLUME_PATH on the host
+  db_volume:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DB_VOLUME_PATH}   # bind the volume to DB_VOLUME_PATH on the host
+      
 
 networks:
   dbnet: 
     external: true   # Use an external network
   webnet:
-    name: webnet   # Name of the network
-    driver: overlay   # Use an overlay network
+    external: true   # Use an external network
