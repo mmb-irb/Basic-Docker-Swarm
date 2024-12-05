@@ -38,7 +38,7 @@ For building the services **manually via docker** instructions, please execute t
 
 ⚠️ No sensible default value is provided for any of these fields, they **need to be defined** ⚠️
 
-An `.env` file must be created both in the **loader** and **website** folders. The file `.env.git` can be taken as an example. The file must contain the following environment variables (the DB user needs to have writing rights):
+An `.env` file must be created both in the **loader** and **website** folders. The file `.env.docker.git` can be taken as an example. The file must contain the following environment variables (the DB user needs to have writing rights):
 
 | key              | value   | description                                     |
 | ---------------- | ------- | ----------------------------------------------- |

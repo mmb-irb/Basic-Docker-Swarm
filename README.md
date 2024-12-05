@@ -5,6 +5,8 @@ In this **proof of concept** there are all the files needed for executing the di
 
 This help contains the instructions for **launching the services** via **Docker Swarm**. If you want to launch them via **Dockerfiles**, please [**click here**](via_docker.md). If you want to launch them via **docker-compose**, please [**click here**](via_docker_compose.md).
 
+These services can be run in **Podman** as well. If you want to launch them via **Podman**, please [**click here**](via_podman.md).
+
 Schema of web **services**. Each box in the schema is a **service** encapsulated into a docker **container**. See the following figure:
 
 <div align="center" style="display:flex;align-items:center;justify-content:space-around;">
@@ -57,6 +59,8 @@ services:
       context: ./apache   # folder to search Dockerfile for this image
       args:
         WEBSITE_INNER_PORT: ${WEBSITE_INNER_PORT} 
+        APACHE_HTTP_INNER_PORT: ${APACHE_HTTP_INNER_PORT}
+        APACHE_HTTPS_INNER_PORT: ${APACHE_HTTPS_INNER_PORT}
     ports:
       - "${APACHE_HTTP_OUTER_PORT}:${APACHE_HTTP_INNER_PORT}"
       - "${APACHE_HTTPS_OUTER_PORT}:${APACHE_HTTPS_INNER_PORT}"
@@ -141,11 +145,17 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+      MONGO_PORT: ${DB_OUTER_PORT}
+      MONGO_INITDB_DATABASE: ${DB_DATABASE}
+      LOADER_DB_LOGIN: ${LOADER_DB_LOGIN}
+      LOADER_DB_PASSWORD: ${LOADER_DB_PASSWORD}
+      WEBSITE_SERVER_DB_LOGIN: ${WEBSITE_DB_LOGIN}
+      WEBSITE_SERVER_DB_PASSWORD: ${WEBSITE_DB_PASSWORD}
     ports:
       - "${DB_OUTER_PORT}:${DB_INNER_PORT}"
     volumes:
-      - ${DB_VOLUME_PATH}:/data/db   # path where the database will be stored (outside the container, in the host machine)
-      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro   # path to the initialization script
+      - db_volume:/data/db   # path where the database will be stored (outside the container, in the host machine)
+      - ./mongodb/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro   # path to the initialization script
     networks:
       - dbnet
     deploy:
@@ -167,13 +177,19 @@ volumes:
       type: none
       o: bind
       device: ${LOADER_VOLUME_PATH}   # bind the volume to LOADER_VOLUME_PATH on the host
+  db_volume:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DB_VOLUME_PATH}   # bind the volume to DB_VOLUME_PATH on the host
+      
 
 networks:
   dbnet: 
     external: true   # Use an external network
   webnet:
-    name: webnet   # Name of the network
-    driver: overlay   # Use an overlay network
+    external: true   # Use an external network
 ```
 
 All the variables are defined in a `.env` file. See following section.
@@ -182,7 +198,7 @@ All the variables are defined in a `.env` file. See following section.
 
 ⚠️ No sensible default value is provided for any of these fields, they **need to be defined** ⚠️
 
-An `.env` file must be created in the **root** folder. The file [`.env.git`](.env.git) can be taken as an example. The file must contain the following environment variables:
+An `.env` file must be created in the **root** folder. The file [`.env.docker.git`](.env.docker.git) can be taken as an example. The file must contain the following environment variables:
 
 | key              | value   | description                                     |
 | ---------------- | ------- | ----------------------------------------------- |

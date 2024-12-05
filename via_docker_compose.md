@@ -3,7 +3,7 @@
 
 In this **proof of concept** there are all the files needed for executing the different services for executing a website: **front-end**, **back-end**, **database** and **data loader**. All these services have been integrated into docker containers and connected between them via docker network.
 
-This help contains the instructions for **launching the services** via **Docker Compose**. If you want to launch them via **Dockerfiles**, please [**click here**](via_docker.md). If you want to launch them via **dDocker Swarm**, please [**click here**](README.md). If you want to launch them via **docker-compose**, please [**click here**](via-docker-compose.md).
+This help contains the instructions for **launching the services** via **Docker Compose**. If you want to launch them via **Dockerfiles**, please [**click here**](via_docker.md). If you want to launch them via **Docker Swarm**, please [**click here**](README.md). If you want to launch them via **docker-compose**, please [**click here**](via-docker-compose.md).
 
 ## Services description
 
@@ -91,7 +91,7 @@ networks:
 
 ⚠️ No sensible default value is provided for any of these fields, they **need to be defined** ⚠️
 
-An `.env` file must be created both in the **loader** and **website** folders. The file `.env.git` can be taken as an example. The file must contain the following environment variables (the DB user needs to have writing rights):
+An `.env` file must be created both in the **loader** and **website** folders. The file `.env.docker.git` can be taken as an example. The file must contain the following environment variables (the DB user needs to have writing rights):
 
 #### loader
 

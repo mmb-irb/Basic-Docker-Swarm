@@ -10,6 +10,8 @@ ARG APACHE_HTTPS_INNER_PORT
 
 # Perform search and replace using sed
 RUN sed -i "s/WEBSITE_INNER_PORT/${WEBSITE_INNER_PORT}/g" /usr/local/apache2/conf/conf.d/custom.conf
+RUN sed -i "s/APACHE_HTTP_INNER_PORT/${APACHE_HTTP_INNER_PORT}/g" /usr/local/apache2/conf/conf.d/custom.conf
+RUN sed -i "s/APACHE_HTTPS_INNER_PORT/${APACHE_HTTPS_INNER_PORT}/g" /usr/local/apache2/conf/conf.d/custom.conf
 
 # Append IncludeOptional directive to the default httpd.conf
 RUN echo "IncludeOptional /usr/local/apache2/conf/conf.d/custom.conf" >> /usr/local/apache2/conf/httpd.conf

@@ -12,7 +12,6 @@ ARG DB_HOST
 ARG DB_PORT
 ARG DB_DATABASE
 ARG DB_AUTHSOURCE
-ARG WEBSITE_INNER_PORT
 ARG WEBSITE_DB_LOGIN
 ARG WEBSITE_DB_PASSWORD
 ARG WEBSITE_BASE_URL_DEVELOPMENT
@@ -62,6 +61,9 @@ COPY --from=build /app/nuxt-skeleton/.output /app/.output
 
 # Copy the pm2 configuration file
 COPY ecosystem.config.cjs .
+
+# Define the build argument
+ARG WEBSITE_INNER_PORT
 
 # Expose the port the app runs on
 EXPOSE ${WEBSITE_INNER_PORT}
