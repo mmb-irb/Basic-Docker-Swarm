@@ -341,3 +341,9 @@ sudo firewall-cmd --list-all
 podman system prune -a
 podman system prune --volumes -f
 ```
+
+### Remove unused images
+
+```sh
+podman image prune
+```
